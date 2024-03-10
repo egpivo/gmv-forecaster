@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "forecaster"
+version = "0.0.1"
+description = "Forecast GMV"
+authors = ["egpivo <egpivo@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+matplotlib = "^3.8.3"
+pandas = "^2.2.1"
+dython = "^0.7.5"
+ipykernel = "^6.29.3"
+torchfm = "^0.7.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
