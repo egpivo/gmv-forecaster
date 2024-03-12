@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 
 class CompressedInteractionNetwork(torch.nn.Module):
@@ -58,6 +59,7 @@ class FeaturesEmbedding(torch.nn.Module):
         :param x: Long tensor of size ``(batch_size, num_fields)``
         """
         x = x + x.new_tensor(self.offsets).unsqueeze(0)
+        x = x.long()
         return self.embedding(x)
 
 
@@ -73,6 +75,7 @@ class FeaturesLinear(torch.nn.Module):
         :param x: Long tensor of size ``(batch_size, num_fields)``
         """
         x = x + x.new_tensor(self.offsets).unsqueeze(0)
+        x = x.long()
         return torch.sum(self.fc(x), dim=1) + self.bias
 
 
