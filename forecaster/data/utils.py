@@ -1,35 +1,31 @@
 import pandas as pd
 
-
 def generate_negative_samples(
-    full_data_pdf: pd.DataFrame, num_negative_samples: int = 5, random_state: int = 42
+    positive_pairs: pd.DataFrame, data: pd.DataFrame, num_negative_samples: int = 5, random_state: int = 42
 ) -> pd.DataFrame:
     """
     Generate negative samples for a binary classification problem.
 
-    Examples
-    --------
-    >>> from forecaster.data.utils import generate_negative_samples
-    >>> balanced_dataset = generate_negative_samples(full_data_pdf)
-
     Parameters
     ----------
-    - full_data_pdf (pd.DataFrame): The DataFrame containing positive instances.
-    - num_negative_samples (int, optional): The number of negative samples to generate for each user. Default is 5.
-    - random_state (int, optional): Random seed for reproducibility. Default is 42.
+    positive_pairs : pd.DataFrame
+        The DataFrame containing unique user and store pairs from positive instances
+    data : pd.DataFrame
+        The subset of data for which negative samples are generated.
+    num_negative_samples : int, optional
+        The number of negative samples to generate for each user. Default is 5.
+    random_state : int, optional
+        Random seed for reproducibility. Default is 42.
 
     Returns
     -------
-    - pd.DataFrame: A balanced dataset with both positive and negative samples.
+    pd.DataFrame
+        A balanced dataset with both positive and negative samples.
     """
-
-    # Extract unique user and store pairs from positive instances
-    positive_pairs = full_data_pdf[["user_id", "store_id"]].drop_duplicates()
-
-    # Generate a list of all possible user and store pairs
+    # Generate a list of all possible user and store pairs for the given data subset
     all_user_store_pairs = pd.DataFrame(
         index=pd.MultiIndex.from_product(
-            [full_data_pdf["user_id"].unique(), full_data_pdf["store_id"].unique()],
+            [data["user_id"].unique(), data["store_id"].unique()],
             names=["user_id", "store_id"],
         )
     ).reset_index()
@@ -56,7 +52,7 @@ def generate_negative_samples(
     negative_samples["label"] = 0
     # Combine positive and negative samples
     balanced_dataset = pd.concat(
-        [full_data_pdf[["user_id", "store_id", "label"]], negative_samples]
+        [data[["user_id", "store_id", "label"]], negative_samples]
     )
     # Shuffle the dataset to mix positive and negative samples
     balanced_dataset = balanced_dataset.sample(
