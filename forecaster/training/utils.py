@@ -1,3 +1,5 @@
+import os
+
 import torch
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
@@ -14,6 +16,9 @@ class EarlyStopper:
         if accuracy > self.best_accuracy:
             self.best_accuracy = accuracy
             self.trial_counter = 0
+
+            # Create the directory if it doesn't exist
+            os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
             torch.save(model, self.save_path)
             return True
         elif self.trial_counter + 1 < self.num_trials:
