@@ -6,8 +6,8 @@ class DataHandler:
     Examples
     --------
     >>> from forecaster.data.data_handler import DataHandler
-    >>> DataHandler(user_data_path="data/users.csv", transaction_data_path="", store_data_path="")
-    >>> DataHandler.fetch_user_data().head(1)
+    >>> handler = DataHandler(user_data_path="data/users.csv", transaction_data_path="", store_data_path="")
+    >>> handler.fetch_user_data().head(1)
         user_id	gender	age
     0	3cf2d95c-851a-3e66-bd62-36050c1aa8dd	M	30.0
     """
@@ -31,7 +31,7 @@ class DataHandler:
         assert any(
             user_pdf.columns == default_columns
         ), f"Check the input columns of users, got {user_pdf.columns}"
-        return user_pdf.rename({"id": "user_id"}, axis=1).dropna()
+        return user_pdf
 
     def fetch_transaction_data(self) -> pd.DataFrame:
         """Return: 'id', 'user_id', 'store_id', 'event_occurrence', 'amount'"""
@@ -53,4 +53,4 @@ class DataHandler:
         assert any(
             store_pdf.columns == default_columns
         ), f"Check the input columns of stores, got {store_pdf.columns}"
-        return store_pdf.rename({"id": "store_id"}, axis=1)
+        return store_pdf
