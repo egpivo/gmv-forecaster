@@ -16,6 +16,7 @@ torch = [
     { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", url = "https://download.pytorch.org/whl/cpu/torch-2.2.0-cp312-none-macosx_10_9_x86_64.whl" },
     { markers = "sys_platform == 'linux'", url = "https://download.pytorch.org/whl/cpu/torch-2.2.0%2Bcpu-cp312-cp312-linux_x86_64.whl" }
 ]
+scikit-learn = "^1.4.1.post1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.3.0"

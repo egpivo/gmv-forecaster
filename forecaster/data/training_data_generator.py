@@ -1,35 +1,34 @@
 import torch
 from forecaster.data.utils import generate_negative_samples
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
 
 
 class TrainingDataset(Dataset):
     """
     Examples
     --------
+    >>> import torch
     >>> from forecaster.data.data_proprocessor import DataPreprocessor
     >>> from forecaster.data.training_data_generator import TrainingDataset
     >>> full_data_pdf = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv").process()
     >>> dataset = TrainingDataset(full_data_pdf)
-    >>> train_loader = torch.utils.data.DataLoader(dataset, batch_size=64, sampler=torch.utils.data.SubsetRandomSampler(dataset.train_indices))
-    >>> train_loader
+    >>> train_loader = torch.utils.data.DataLoader(dataset, batch_size=8, sampler=torch.utils.data.SubsetRandomSampler(dataset.train_indices))
+    >>> next(iter(train_loader))
+    {'user_label': tensor([8355, 4416, 7508, 6793, 1011, 7133, 2794, 1201]),
+     'store_label': tensor([63634, 83770, 33454, 24558,  8657, 46895, 10226, 65825]),
+     'label': tensor([0, 1, 0, 0, 0, 0, 0, 0])}
     """
-    def __init__(self, full_data_pdf, num_negative_samples=5, random_state=42, split_ratio=(0.8, 0.1, 0.1)):
-        self.full_data_pdf = full_data_pdf
-        self.positive_pairs = full_data_pdf[["user_id", "store_id"]].drop_duplicates()
-        self.num_negative_samples = num_negative_samples
-        self.random_state = random_state
-
-        # Generate negative samples once and store them
-        self.all_samples = self._generate_samples(full_data_pdf)
+    def __init__(self, full_data_pdf, split_ratio=(0.8, 0.1)):
+        self.all_samples = full_data_pdf.drop(["user_id", "store_id"], axis=1)
+        self.split_ratio = split_ratio
 
         # Split indices for train, validation, and test sets
         self.train_indices, self.valid_indices, self.test_indices = self._split_indices()
 
     def _split_indices(self):
         # Calculate lengths of splits
-        train_size = int(0.8 * len(self.all_samples))
-        valid_size = int(0.1 * len(self.all_samples))
+        train_size = int(self.split_ratio[0] * len(self.all_samples))
+        valid_size = int(self.split_ratio[1] * len(self.all_samples))
 
         # Generate indices and split
         indices = torch.randperm(len(self.all_samples)).tolist()
@@ -46,11 +45,7 @@ class TrainingDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.item()
         return {
-            'user_id': torch.tensor(self.all_samples.loc[idx, 'user_id']),
-            'store_id': torch.tensor(self.all_samples.loc[idx, 'store_id']),
+            'user_label': torch.tensor(self.all_samples.loc[idx, 'user_label']),
+            'store_label': torch.tensor(self.all_samples.loc[idx, 'store_label']),
             'label': torch.tensor(self.all_samples.loc[idx, 'label'])
         }
-
-    def _generate_samples(self, data):
-        # Your logic to generate negative samples
-        return generate_negative_samples(self.positive_pairs, data, self.num_negative_samples, self.random_state)

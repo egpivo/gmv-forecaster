@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 from forecaster.data.data_handler import DataHandler
+from forecaster.data.utils import generate_negative_samples
 
 
 class DataPreprocessor:
@@ -15,21 +16,20 @@ class DataPreprocessor:
     --------
     >>> from forecaster.data.data_proprocessor import DataPreprocessor
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
-    >>> processor.process().head(1)
-                                    user_id  ... month
-    0  93098549-3ff0-e579-01c3-df9183278f64  ...     1
-    [1 rows x 15 columns]
+    >>> processor.process().shape
+    (8531868, 16)
     """
 
     _return_columns = [
         'user_id', 'store_id', 'user_label', 'store_label', 'amount', 'gender',
         'age', 'nam', 'laa', 'category', 'lat', 'lon', 'is_weekend', 'season',
-        'month'
+        'month', 'label'
     ]
     def __init__(
-        self, user_data_path: str, transaction_data_path: str, store_data_path: str
+        self, user_data_path: str, transaction_data_path: str, store_data_path: str, num_negative_samples: int = 5
     ) -> None:
         self.handler = DataHandler(user_data_path, transaction_data_path, store_data_path)
+        self.num_negative_samples = num_negative_samples
 
 
     def _process_user_data(self) -> pd.DataFrame:
@@ -42,23 +42,30 @@ class DataPreprocessor:
         store_pdf["store_label"] = LabelEncoder().fit_transform(store_pdf["store_id"])
         return store_pdf
 
-    def _add_temporal_features(self, pdf: pd.DataFrame) -> pd.DataFrame:
-        pdf['event_occurrence'] = pd.to_datetime(pdf['event_occurrence'])
+    def _process_transaction_data(self) -> pd.DataFrame:
+        """Add negative sampling + temporal features """
+        transaction_pdf = self.handler.fetch_transaction_data().drop("id", axis=1)
+        #Negative sampling
+        label_data_pdf = generate_negative_samples(transaction_pdf, num_negative_samples=self.num_negative_samples)
 
         # Extracting temporal features
-        pdf['is_weekend'] = (pdf['event_occurrence'].dt.weekday >= 5) * 1  # True for weekdays, False for weekends
-        pdf['season'] = (pdf['event_occurrence'].dt.month % 12 + 3) // 3  # Calculating the season based on months
-        pdf['month'] = pdf['event_occurrence'].dt.month
-        return pdf
+        label_data_pdf['is_weekend'] = (label_data_pdf['event_occurrence'].dt.weekday >= 5) * 1
+        label_data_pdf['season'] = (label_data_pdf['event_occurrence'].dt.month % 12 + 3) // 3
+        label_data_pdf['month'] = label_data_pdf['event_occurrence'].dt.month
+        return label_data_pdf
+
+
 
     def process(self) -> pd.DataFrame:
         # [TODO] Check other methods to deal with Null data
         user_pdf = self._process_user_data()
-        transaction_pdf = self.handler.fetch_transaction_data()
+        transaction_pdf = self._process_transaction_data()
         store_pdf = self._process_store_data()
-        merged_data =  pd.merge(
+
+        merged_data_pdf =  pd.merge(
                 pd.merge(transaction_pdf, user_pdf, on=["user_id"], how="inner"),
                 store_pdf, on=["store_id"], how="left"
         )
-        full_data = self._add_temporal_features(merged_data)
-        return full_data[self._return_columns]
+        return merged_data_pdf[self._return_columns]
+
+

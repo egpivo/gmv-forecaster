@@ -1,62 +1,33 @@
 import pandas as pd
+import numpy as np
+def generate_negative_samples(data, num_negative_samples=5, random_state=42):
+    np.random.seed(random_state)
 
-def generate_negative_samples(
-    positive_pairs: pd.DataFrame, data: pd.DataFrame, num_negative_samples: int = 5, random_state: int = 42
-) -> pd.DataFrame:
-    """
-    Generate negative samples for a binary classification problem.
+    # Get user purchase frequency
+    user_purchase_freq = data['user_id'].value_counts().to_frame('freq')
 
-    Parameters
-    ----------
-    positive_pairs : pd.DataFrame
-        The DataFrame containing unique user and store pairs from positive instances
-    data : pd.DataFrame
-        The subset of data for which negative samples are generated.
-    num_negative_samples : int, optional
-        The number of negative samples to generate for each user. Default is 5.
-    random_state : int, optional
-        Random seed for reproducibility. Default is 42.
+    # Create positive samples
+    data['label'] = 1
 
-    Returns
-    -------
-    pd.DataFrame
-        A balanced dataset with both positive and negative samples.
-    """
-    # Generate a list of all possible user and store pairs for the given data subset
-    all_user_store_pairs = pd.DataFrame(
-        index=pd.MultiIndex.from_product(
-            [data["user_id"].unique(), data["store_id"].unique()],
-            names=["user_id", "store_id"],
-        )
-    ).reset_index()
+    # Generate negative samples
+    all_stores = data['store_id'].unique()
+    total_samples = num_negative_samples * user_purchase_freq['freq'].sum()
 
-    # Identify negative pairs by finding those not present in positive pairs
-    negative_pairs = all_user_store_pairs[
-        ~all_user_store_pairs.set_index(["user_id", "store_id"]).index.isin(
-            positive_pairs.set_index(["user_id", "store_id"]).index
-        )
-    ]
+    # Sample stores and maintain temporal structure for event occurrences
+    sampled_stores = np.random.choice(all_stores, total_samples, replace=True)
+    sampled_event_times = np.random.choice(data["event_occurrence"], total_samples, replace=True)
 
-    # Randomly sample negative stores for each user
-    users = negative_pairs["user_id"].unique()
-    negative_samples = pd.DataFrame(columns=["user_id", "store_id", "label"])
+    # Create negative samples DataFrame
+    negative_samples = pd.DataFrame({
+        'user_id': np.repeat(user_purchase_freq.index.values, num_negative_samples * user_purchase_freq['freq']),
+        'store_id': sampled_stores,
+        'event_occurrence': sampled_event_times,
+        'amount': np.zeros(total_samples, dtype=int),
+        'label': np.zeros(total_samples, dtype=int)
+    })
 
-    for user in users:
-        # Randomly sample negative stores not present in positive instances for each user
-        negative_stores = negative_pairs[negative_pairs["user_id"] == user].sample(
-            n=num_negative_samples, random_state=random_state
-        )
-        negative_samples = pd.concat([negative_samples, negative_stores])
-
-    # Add a 'label' column indicating negative instances
-    negative_samples["label"] = 0
     # Combine positive and negative samples
-    balanced_dataset = pd.concat(
-        [data[["user_id", "store_id", "label"]], negative_samples]
-    )
-    # Shuffle the dataset to mix positive and negative samples
-    balanced_dataset = balanced_dataset.sample(
-        frac=1, random_state=random_state
-    ).reset_index(drop=True)
+    balanced_dataset = pd.concat([data, negative_samples], ignore_index=True)
+    balanced_dataset = balanced_dataset.sample(frac=1, random_state=random_state).reset_index(drop=True)
 
     return balanced_dataset
