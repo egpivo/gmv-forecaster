@@ -17,6 +17,7 @@ torch = [
     { markers = "sys_platform == 'linux'", url = "https://download.pytorch.org/whl/cpu/torch-2.2.0%2Bcpu-cp312-cp312-linux_x86_64.whl" }
 ]
 scikit-learn = "^1.4.1.post1"
+tqdm = "^4.66.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.3.0"

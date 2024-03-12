@@ -19,13 +19,21 @@ class TrainingDataset(Dataset):
      tensor([0])]
     """
 
-    _removed_id = ("user_id", "store_id", "gender", "nam", "laa", "category")
+    _removed_id = (
+        "user_id",
+        "store_id",
+        "gender",
+        "nam",
+        "laa",
+        "category",
+        "amount",
+    )
 
     def __init__(self, full_data_pdf, split_ratio=(0.8, 0.1)):
         # Drop unnecessary columns and convert to tensors
-        self.features = torch.tensor(
-            full_data_pdf.drop([*self._removed_id, "label"], axis=1).values
-        )
+        selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
+        self.features = torch.tensor(selected_features.values)
+        self.field_dims = selected_features.nunique()
         self.labels = torch.tensor(full_data_pdf["label"].values)
         self.split_ratio = split_ratio
 

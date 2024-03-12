@@ -27,6 +27,7 @@ class DataPreprocessor:
         "nam",
         "laa",
         "category",
+        "amount",
         # User Field
         "user_id_label",
         "gender_label",
@@ -42,7 +43,6 @@ class DataPreprocessor:
         "is_weekend",
         "season",
         "month",
-        "amount",
         # Target
         "label",
     ]
