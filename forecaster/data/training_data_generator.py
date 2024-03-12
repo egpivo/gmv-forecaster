@@ -1,6 +1,5 @@
 import torch
-from forecaster.data.utils import generate_negative_samples
-from torch.utils.data import Dataset, random_split
+from torch.utils.data import Dataset
 
 
 class TrainingDataset(Dataset):
@@ -18,12 +17,17 @@ class TrainingDataset(Dataset):
      'store_label': tensor([63634, 83770, 33454, 24558,  8657, 46895, 10226, 65825]),
      'label': tensor([0, 1, 0, 0, 0, 0, 0, 0])}
     """
+
     def __init__(self, full_data_pdf, split_ratio=(0.8, 0.1)):
         self.all_samples = full_data_pdf.drop(["user_id", "store_id"], axis=1)
         self.split_ratio = split_ratio
 
         # Split indices for train, validation, and test sets
-        self.train_indices, self.valid_indices, self.test_indices = self._split_indices()
+        (
+            self.train_indices,
+            self.valid_indices,
+            self.test_indices,
+        ) = self._split_indices()
 
     def _split_indices(self):
         # Calculate lengths of splits
@@ -33,8 +37,8 @@ class TrainingDataset(Dataset):
         # Generate indices and split
         indices = torch.randperm(len(self.all_samples)).tolist()
         train_indices = indices[:train_size]
-        valid_indices = indices[train_size:train_size + valid_size]
-        test_indices = indices[train_size + valid_size:]
+        valid_indices = indices[train_size : train_size + valid_size]
+        test_indices = indices[train_size + valid_size :]
         return train_indices, valid_indices, test_indices
 
     def __len__(self):
@@ -45,7 +49,7 @@ class TrainingDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.item()
         return {
-            'user_label': torch.tensor(self.all_samples.loc[idx, 'user_label']),
-            'store_label': torch.tensor(self.all_samples.loc[idx, 'store_label']),
-            'label': torch.tensor(self.all_samples.loc[idx, 'label'])
+            "user_label": torch.tensor(self.all_samples.loc[idx, "user_label"]),
+            "store_label": torch.tensor(self.all_samples.loc[idx, "store_label"]),
+            "label": torch.tensor(self.all_samples.loc[idx, "label"]),
         }

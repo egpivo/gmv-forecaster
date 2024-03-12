@@ -21,40 +21,67 @@ class DataPreprocessor:
     """
 
     _return_columns = [
-        'user_id', 'store_id', 'user_label', 'store_label', 'amount', 'gender',
-        'age', 'nam', 'laa', 'category', 'lat', 'lon', 'is_weekend', 'season',
-        'month', 'label'
+        "user_id",
+        "store_id",
+        "user_label",
+        "store_label",
+        "amount",
+        "gender",
+        "age",
+        "nam",
+        "laa",
+        "category",
+        "lat",
+        "lon",
+        "is_weekend",
+        "season",
+        "month",
+        "label",
     ]
+
     def __init__(
-        self, user_data_path: str, transaction_data_path: str, store_data_path: str, num_negative_samples: int = 5
+        self,
+        user_data_path: str,
+        transaction_data_path: str,
+        store_data_path: str,
+        num_negative_samples: int = 5,
     ) -> None:
-        self.handler = DataHandler(user_data_path, transaction_data_path, store_data_path)
+        self.handler = DataHandler(
+            user_data_path, transaction_data_path, store_data_path
+        )
         self.num_negative_samples = num_negative_samples
 
-
     def _process_user_data(self) -> pd.DataFrame:
-        user_pdf = self.handler.fetch_user_data().rename({"id": "user_id"}, axis=1).dropna()
+        user_pdf = (
+            self.handler.fetch_user_data().rename({"id": "user_id"}, axis=1).dropna()
+        )
         user_pdf["user_label"] = LabelEncoder().fit_transform(user_pdf["user_id"])
         return user_pdf
 
     def _process_store_data(self) -> pd.DataFrame:
-        store_pdf = self.handler.fetch_store_data().rename({"id": "store_id"}, axis=1).dropna()
+        store_pdf = (
+            self.handler.fetch_store_data().rename({"id": "store_id"}, axis=1).dropna()
+        )
         store_pdf["store_label"] = LabelEncoder().fit_transform(store_pdf["store_id"])
         return store_pdf
 
     def _process_transaction_data(self) -> pd.DataFrame:
-        """Add negative sampling + temporal features """
+        """Add negative sampling + temporal features"""
         transaction_pdf = self.handler.fetch_transaction_data().drop("id", axis=1)
-        #Negative sampling
-        label_data_pdf = generate_negative_samples(transaction_pdf, num_negative_samples=self.num_negative_samples)
+        # Negative sampling
+        label_data_pdf = generate_negative_samples(
+            transaction_pdf, num_negative_samples=self.num_negative_samples
+        )
 
         # Extracting temporal features
-        label_data_pdf['is_weekend'] = (label_data_pdf['event_occurrence'].dt.weekday >= 5) * 1
-        label_data_pdf['season'] = (label_data_pdf['event_occurrence'].dt.month % 12 + 3) // 3
-        label_data_pdf['month'] = label_data_pdf['event_occurrence'].dt.month
+        label_data_pdf["is_weekend"] = (
+            label_data_pdf["event_occurrence"].dt.weekday >= 5
+        ) * 1
+        label_data_pdf["season"] = (
+            label_data_pdf["event_occurrence"].dt.month % 12 + 3
+        ) // 3
+        label_data_pdf["month"] = label_data_pdf["event_occurrence"].dt.month
         return label_data_pdf
-
-
 
     def process(self) -> pd.DataFrame:
         # [TODO] Check other methods to deal with Null data
@@ -62,10 +89,10 @@ class DataPreprocessor:
         transaction_pdf = self._process_transaction_data()
         store_pdf = self._process_store_data()
 
-        merged_data_pdf =  pd.merge(
-                pd.merge(transaction_pdf, user_pdf, on=["user_id"], how="inner"),
-                store_pdf, on=["store_id"], how="left"
+        merged_data_pdf = pd.merge(
+            pd.merge(transaction_pdf, user_pdf, on=["user_id"], how="inner"),
+            store_pdf,
+            on=["store_id"],
+            how="left",
         )
         return merged_data_pdf[self._return_columns]
-
-
