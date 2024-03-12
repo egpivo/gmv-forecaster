@@ -23,19 +23,27 @@ class DataPreprocessor:
     _return_columns = [
         "user_id",
         "store_id",
-        "user_label",
-        "store_label",
-        "amount",
         "gender",
-        "age",
         "nam",
         "laa",
         "category",
+        # User Field
+        "user_id_label",
+        "gender_label",
+        "age",
+        # Store Field
+        "store_id_label",
+        "nam_label",
+        "laa_label",
+        "category_label",
         "lat",
         "lon",
+        # Contex Field
         "is_weekend",
         "season",
         "month",
+        "amount",
+        # Target
         "label",
     ]
 
@@ -51,18 +59,25 @@ class DataPreprocessor:
         )
         self.num_negative_samples = num_negative_samples
 
+    def _label_encode(self, column: pd.Series) -> pd.Series:
+        return LabelEncoder().fit_transform(column)
+
     def _process_user_data(self) -> pd.DataFrame:
         user_pdf = (
             self.handler.fetch_user_data().rename({"id": "user_id"}, axis=1).dropna()
         )
-        user_pdf["user_label"] = LabelEncoder().fit_transform(user_pdf["user_id"])
+        # Label encoding
+        for column in ("user_id", "gender"):
+            user_pdf[f"{column}_label"] = self._label_encode(user_pdf[column])
         return user_pdf
 
     def _process_store_data(self) -> pd.DataFrame:
         store_pdf = (
             self.handler.fetch_store_data().rename({"id": "store_id"}, axis=1).dropna()
         )
-        store_pdf["store_label"] = LabelEncoder().fit_transform(store_pdf["store_id"])
+        # Label encoding
+        for column in ("store_id", "nam", "laa", "category"):
+            store_pdf[f"{column}_label"] = self._label_encode(store_pdf[column])
         return store_pdf
 
     def _process_transaction_data(self) -> pd.DataFrame:
@@ -72,7 +87,6 @@ class DataPreprocessor:
         label_data_pdf = generate_negative_samples(
             transaction_pdf, num_negative_samples=self.num_negative_samples
         )
-
         # Extracting temporal features
         label_data_pdf["is_weekend"] = (
             label_data_pdf["event_occurrence"].dt.weekday >= 5
