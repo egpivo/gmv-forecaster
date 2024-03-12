@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 from forecaster.data.data_handler import DataHandler
 
@@ -17,11 +18,11 @@ class DataPreprocessor:
     >>> processor.process().head(1)
                                     user_id  ... month
     0  93098549-3ff0-e579-01c3-df9183278f64  ...     1
-    [1 rows x 14 columns]
+    [1 rows x 15 columns]
     """
 
     _return_columns = [
-        'user_id', 'store_id', 'event_occurrence', 'amount', 'gender',
+        'user_id', 'store_id', 'user_label', 'store_label', 'amount', 'gender',
         'age', 'nam', 'laa', 'category', 'lat', 'lon', 'is_weekend', 'season',
         'month'
     ]
@@ -29,6 +30,17 @@ class DataPreprocessor:
         self, user_data_path: str, transaction_data_path: str, store_data_path: str
     ) -> None:
         self.handler = DataHandler(user_data_path, transaction_data_path, store_data_path)
+
+
+    def _process_user_data(self) -> pd.DataFrame:
+        user_pdf = self.handler.fetch_user_data().rename({"id": "user_id"}, axis=1).dropna()
+        user_pdf["user_label"] = LabelEncoder().fit_transform(user_pdf["user_id"])
+        return user_pdf
+
+    def _process_store_data(self) -> pd.DataFrame:
+        store_pdf = self.handler.fetch_store_data().rename({"id": "store_id"}, axis=1).dropna()
+        store_pdf["store_label"] = LabelEncoder().fit_transform(store_pdf["store_id"])
+        return store_pdf
 
     def _add_temporal_features(self, pdf: pd.DataFrame) -> pd.DataFrame:
         pdf['event_occurrence'] = pd.to_datetime(pdf['event_occurrence'])
@@ -41,9 +53,9 @@ class DataPreprocessor:
 
     def process(self) -> pd.DataFrame:
         # [TODO] Check other methods to deal with Null data
-        user_pdf = self.handler.fetch_user_data().rename({"id": "user_id"}, axis=1).dropna()
+        user_pdf = self._process_user_data()
         transaction_pdf = self.handler.fetch_transaction_data()
-        store_pdf = self.handler.fetch_store_data().rename({"id": "store_id"}, axis=1)
+        store_pdf = self._process_store_data()
         merged_data =  pd.merge(
                 pd.merge(transaction_pdf, user_pdf, on=["user_id"], how="inner"),
                 store_pdf, on=["store_id"], how="left"
