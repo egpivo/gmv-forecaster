@@ -1,15 +1,16 @@
-import logging
-
 import torch
 from torch.utils.data import DataLoader, SubsetRandomSampler
 
 from forecaster.data.data_proprocessor import DataPreprocessor
 from forecaster.data.training_data_generator import TrainingDataset
+from forecaster.logger.logging import setup_logger
 from forecaster.training.model.xdfm import ExtremeDeepFactorizationMachineModel
 from forecaster.training.utils import EarlyStopper, test_model, train_model
 
 
 class Trainer:
+    _model_name = "xdfm"
+
     def __init__(
         self,
         learning_rate: float = 1e-3,
@@ -23,9 +24,9 @@ class Trainer:
         epoch: int = 5,
         dropout: float = 0.2,
         num_workers: int = 8,
+        model_name: str = None,
     ) -> None:
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+
         self.device = torch.device(device)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -37,11 +38,12 @@ class Trainer:
         self.epoch = epoch
         self.dropout = dropout
         self.num_workers = num_workers
-        self.model_name = "your_model_name"  # Replace with an appropriate model name
+        self.model_name = model_name or self._model_name
 
-        # Set up data loaders and model
+        # Set up
         self.setup_data()
         self.setup_model()
+        self.logger = setup_logger()
 
     def setup_data(self):
         full_data_pdf = DataPreprocessor(
@@ -103,8 +105,3 @@ class Trainer:
 
         auc = test_model(self.model, self.test_loader, self.device)
         self.logger.info(f"Test AUC: {auc}")
-
-
-if __name__ == "__main__":
-    trainer = Trainer()
-    trainer.train()
