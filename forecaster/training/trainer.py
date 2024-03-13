@@ -66,7 +66,7 @@ class Trainer:
             weight_decay=self.weight_decay,
         )
         early_stopper = EarlyStopper(
-            num_trials=2, save_path=f"{self.save_dir}/{self.model_name}.pt"
+            num_trials=self.epoch, save_path=f"{self.save_dir}/{self.model_name}.pt"
         )
 
         for epoch_i in range(self.epoch):
