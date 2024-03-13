@@ -45,7 +45,7 @@ def train_model(model, optimizer, data_loader, criterion, device, log_interval=1
             total_loss = 0
 
 
-def test_model(model, data_loader, device, k=10):
+def test_model(model, data_loader, device, top_k=10):
     model.eval()
     targets, predicts = list(), list()
 
@@ -55,7 +55,7 @@ def test_model(model, data_loader, device, k=10):
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
-    auc_at_k = RetrievalAUROC(k=k)(targets, predicts)
-    recall_at_k = RetrievalRecall(k=k)(targets, predicts)
+    auc_at_k = RetrievalAUROC(top_k=k)(targets, predicts)
+    recall_at_k = RetrievalRecall(top_k=k)(targets, predicts)
 
     return auc_at_k, recall_at_k
