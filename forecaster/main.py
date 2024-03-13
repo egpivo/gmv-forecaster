@@ -112,7 +112,7 @@ def run_job(args: "argparse.Namespace") -> None:
         store_data_path=args.store_data_path,
         start_date=args.start_date,
         end_date=args.end_date,
-    ).process()
+    )
     trainer = Trainer(
         processed_data=processor.process(),
         field_dims=processor.field_dims,
