@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 
+from forecaster.data.data_proprocessor import DataPreprocessor
 from forecaster.training.trainer import Trainer
 
 
@@ -24,7 +25,20 @@ def fetch_args() -> "argparse.Namespace":
         dest="store_data_path",
         help="Store data path",
     )
-
+    arg_parser.add_argument(
+        "--start_date",
+        type=str,
+        default=None,
+        dest="start_date",
+        help="Start date for training with format `yyyymmdd`",
+    )
+    arg_parser.add_argument(
+        "--end_date",
+        type=str,
+        default=None,
+        dest="end_date",
+        help="Start date for training with format `yyyymmdd`",
+    )
     arg_parser.add_argument(
         "--learning_rate",
         default=1e-3,
@@ -85,14 +99,20 @@ def fetch_args() -> "argparse.Namespace":
 
 
 def run_job(args: "argparse.Namespace") -> None:
+    processed_data = DataPreprocessor(
+        user_data_path=args.user_data_path,
+        transaction_data_path=args.transaction_data_path,
+        store_data_path=args.store_data_path,
+        start_date=args.start_date,
+        end_date=args.end_date,
+    ).process()
+
     trainer = Trainer(
+        processed_data=processed_data,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
         weight_decay=args.weight_decay,
         save_dir=args.save_dir,
-        user_data_path=args.user_data_path,
-        transaction_data_path=args.transaction_data_path,
-        store_data_path=args.store_data_path,
         epoch=args.epoch,
         dropout=args.dropout,
         num_workers=args.num_workers,

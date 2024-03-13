@@ -1,6 +1,6 @@
+import pandas as pd
 import torch
 
-from forecaster.data.data_proprocessor import DataPreprocessor
 from forecaster.data.training_data_generator import TrainingDataGenerator
 from forecaster.logger.logging import setup_logger
 from forecaster.training.model.xdfm import ExtremeDeepFactorizationMachineModel
@@ -12,28 +12,23 @@ class Trainer:
 
     def __init__(
         self,
+        processed_data: pd.DataFrame,
         learning_rate: float = 1e-3,
         batch_size: int = 128,
         weight_decay: float = 0.1,
         device: str = "cpu",
         save_dir: str = "checkpoint/",
-        user_data_path: str = "data/users.csv",
-        transaction_data_path: str = "data/transactions.csv",
-        store_data_path: str = "data/stores.csv",
         epoch: int = 5,
         dropout: float = 0.2,
         num_workers: int = 8,
         model_name: str = None,
     ) -> None:
-
+        self.processed_data = processed_data
         self.device = torch.device(device)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.weight_decay = weight_decay
         self.save_dir = save_dir
-        self.user_data_path = user_data_path
-        self.transaction_data_path = transaction_data_path
-        self.store_data_path = store_data_path
         self.epoch = epoch
         self.dropout = dropout
         self.num_workers = num_workers
@@ -45,10 +40,7 @@ class Trainer:
         self.logger = setup_logger()
 
     def setup_data(self):
-        full_data_pdf = DataPreprocessor(
-            self.user_data_path, self.transaction_data_path, self.store_data_path
-        ).process()
-        generator = TrainingDataGenerator(full_data_pdf)
+        generator = TrainingDataGenerator(self.processed_data)
         self.train_loader = generator.train_loader
         self.valid_loader = generator.valid_loader
         self.test_loader = generator.test_loader

@@ -54,11 +54,15 @@ class DataPreprocessor:
         transaction_data_path: str,
         store_data_path: str,
         num_negative_samples: int = 5,
+        start_date: str = None,
+        end_date: str = None,
     ) -> None:
         self.handler = DataHandler(
             user_data_path, transaction_data_path, store_data_path
         )
         self.num_negative_samples = num_negative_samples
+        self.start_date = start_date
+        self.end_date = end_date
 
     def _label_encode(self, column: pd.Series) -> pd.Series:
         return LabelEncoder().fit_transform(column)
@@ -84,6 +88,17 @@ class DataPreprocessor:
     def _process_transaction_data(self) -> pd.DataFrame:
         """Add negative sampling + temporal features"""
         transaction_pdf = self.handler.fetch_transaction_data().drop("id", axis=1)
+
+        # Filter data in a range
+        if self.start_date:
+            transaction_pdf = transaction_pdf[
+                pd.to_datetime(self.start_date) < transaction_pdf.event_occurrence
+            ]
+        if self.end_date:
+            transaction_pdf = transaction_pdf[
+                transaction_pdf.event_occurrence < pd.to_datetime(self.end_date)
+            ]
+
         # Negative sampling
         label_data_pdf = generate_negative_samples(
             transaction_pdf, num_negative_samples=self.num_negative_samples
@@ -99,7 +114,6 @@ class DataPreprocessor:
         return label_data_pdf
 
     def process(self) -> pd.DataFrame:
-        # [TODO] Check other methods to deal with Null data
         user_pdf = self._process_user_data()
         transaction_pdf = self._process_transaction_data()
         store_pdf = self._process_store_data()
@@ -110,4 +124,5 @@ class DataPreprocessor:
             on=["store_id"],
             how="left",
         )
+
         return merged_data_pdf[self._return_columns]
