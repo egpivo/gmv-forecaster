@@ -11,6 +11,9 @@ class Trainer:
     def __init__(
         self,
         processed_data: pd.DataFrame,
+        embed_dim: int = 16,
+        cross_layer_sizes: tuple[int, int] = (16, 16),
+        mlp_dims: tuple[int, int] = (16, 16),
         learning_rate: float = 1e-3,
         batch_size: int = 128,
         weight_decay: float = 0.1,
@@ -22,6 +25,9 @@ class Trainer:
         model_name: str = "xdfm",
     ) -> None:
         self.generator = TrainingDataGenerator(processed_data)
+        self.embed_dim = embed_dim
+        self.cross_layer_sizes = cross_layer_sizes
+        self.mlp_dims = mlp_dims
         self.device = torch.device(device)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -45,10 +51,9 @@ class Trainer:
     def setup_model(self):
         self.model = ExtremeDeepFactorizationMachineModel(
             field_dims=self.generator.dataset.field_dims,
-            embed_dim=16,
-            cross_layer_sizes=(16, 16),
-            split_half=False,
-            mlp_dims=(16, 16),
+            embed_dim=self.embed_dim,
+            cross_layer_sizes=self.cross_layer_sizes,
+            mlp_dims=self.mlp_dims,
             dropout=self.dropout,
         )
 

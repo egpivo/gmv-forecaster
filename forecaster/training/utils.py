@@ -52,9 +52,9 @@ def test_model(model, data_loader, device, top_k=10):
     with torch.no_grad():
         for fields, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
             fields, target = fields.to(device), target.to(device)
-            y = model(fields)
+            predict = model(fields)
             targets = torch.cat((targets, target))
-            predicts = torch.cat((predicts, y))
+            predicts = torch.cat((predicts, predict))
 
     targets = targets.cpu()
 

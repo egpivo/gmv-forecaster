@@ -47,6 +47,13 @@ def fetch_args() -> "argparse.Namespace":
         help="Learning rate",
     )
     arg_parser.add_argument(
+        "--embed_dim",
+        default=64,
+        type=int,
+        dest="embed_dim",
+        help="Embedding dim",
+    )
+    arg_parser.add_argument(
         "--batch_size",
         default=128,
         type=int,
@@ -109,6 +116,7 @@ def run_job(args: "argparse.Namespace") -> None:
 
     trainer = Trainer(
         processed_data=processed_data,
+        embed_dim=args.embed_dim,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
         weight_decay=args.weight_decay,
