@@ -60,14 +60,14 @@ class Trainer:
             self.dataset,
             batch_size=self.batch_size,
             sampler=SubsetRandomSampler(self.dataset.valid_indices),
-            shuffle=True,
+            shuffle=False,
             num_workers=self.num_workers,
         )
         self.test_loader = DataLoader(
             self.dataset,
             batch_size=self.batch_size,
             sampler=SubsetRandomSampler(self.dataset.test_indices),
-            shuffle=True,
+            shuffle=False,
             num_workers=self.num_workers,
         )
 
