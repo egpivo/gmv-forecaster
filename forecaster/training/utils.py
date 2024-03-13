@@ -45,16 +45,26 @@ def train_model(model, optimizer, data_loader, criterion, device, log_interval=1
             total_loss = 0
 
 
+import torch
+from tqdm import tqdm
+
+from forecaster.training.metrics import retrieval_auroc, retrieval_recall
+
+
 def test_model(model, data_loader, device, top_k=10):
     model.eval()
-    targets, predicts = list(), list()
+    targets, predicts = torch.tensor([]).to(device), torch.tensor([]).to(device)
 
     with torch.no_grad():
         for fields, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
             fields, target = fields.to(device), target.to(device)
             y = model(fields)
-            targets.extend(target.tolist())
-            predicts.extend(y.tolist())
+            targets = torch.cat((targets, target))
+            predicts = torch.cat((predicts, y))
+
+    targets = targets.cpu()
+    predicts = predicts.cpu()
+
     auc_at_k = retrieval_auroc(targets, predicts, top_k=top_k)
     recall_at_k = retrieval_recall(targets, predicts, top_k=top_k)
 
