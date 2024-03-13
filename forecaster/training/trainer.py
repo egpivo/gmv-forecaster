@@ -1,8 +1,7 @@
 import torch
-from torch.utils.data import DataLoader, SubsetRandomSampler
 
 from forecaster.data.data_proprocessor import DataPreprocessor
-from forecaster.data.training_data_generator import TrainingDataset
+from forecaster.data.training_data_generator import TrainingDataGenerator
 from forecaster.logger.logging import setup_logger
 from forecaster.training.model.xdfm import ExtremeDeepFactorizationMachineModel
 from forecaster.training.utils import EarlyStopper, test_model, train_model
@@ -49,27 +48,10 @@ class Trainer:
         full_data_pdf = DataPreprocessor(
             self.user_data_path, self.transaction_data_path, self.store_data_path
         ).process()
-        self.dataset = TrainingDataset(full_data_pdf)
-        self.train_loader = DataLoader(
-            self.dataset,
-            batch_size=self.batch_size,
-            sampler=SubsetRandomSampler(self.dataset.train_indices),
-            num_workers=self.num_workers,
-        )
-        self.valid_loader = DataLoader(
-            self.dataset,
-            batch_size=self.batch_size,
-            sampler=SubsetRandomSampler(self.dataset.valid_indices),
-            shuffle=False,
-            num_workers=self.num_workers,
-        )
-        self.test_loader = DataLoader(
-            self.dataset,
-            batch_size=self.batch_size,
-            sampler=SubsetRandomSampler(self.dataset.test_indices),
-            shuffle=False,
-            num_workers=self.num_workers,
-        )
+        generator = TrainingDataGenerator(full_data_pdf)
+        self.train_loader = generator.train_loader
+        self.valid_loader = generator.valid_loader
+        self.test_loader = generator.test_loader
 
     def setup_model(self):
         self.model = ExtremeDeepFactorizationMachineModel(

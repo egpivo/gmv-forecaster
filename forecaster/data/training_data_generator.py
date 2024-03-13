@@ -1,22 +1,21 @@
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 
 
-class TrainingDataset(Dataset):
+class ModelDataset(Dataset):
     """
     Examples
     --------
     >>> import torch
     >>> from forecaster.data.data_proprocessor import DataPreprocessor
-    >>> from forecaster.data.training_data_generator import TrainingDataset
+    >>> from forecaster.data.training_data_generator import ModelDataset
     >>> full_data_pdf = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv").process()
-    >>> dataset = TrainingDataset(full_data_pdf)
-    >>> train_loader = torch.utils.data.DataLoader(dataset, batch_size=1, sampler=torch.utils.data.SubsetRandomSampler(dataset.train_indices))
-    >>> next(iter(train_loader))
-    [tensor([[5.7290e+03, 1.0000e+00, 3.7000e+01, 4.5650e+03, 6.0000e+00, 1.7600e+02,
-             2.0000e+00, 3.3545e+01, 1.3042e+02, 1.0000e+00, 2.0000e+00, 5.0000e+00]],
-           dtype=torch.float64), tensor([1])]
+    >>> dataset = ModelDataset(full_data_pdf)
+    >>> next(iter(dataset))
+    (tensor([6.1000e+02, 1.0000e+00, 5.1000e+01, 8.8546e+04, 3.0000e+00, 1.0500e+02,
+        8.0000e+00, 3.5647e+01, 1.4004e+02, 0.0000e+00, 1.0000e+00, 2.0000e+00],
+       dtype=torch.float64), tensor(1))
     """
 
     _removed_id = (
@@ -30,10 +29,44 @@ class TrainingDataset(Dataset):
         "event_occurrence",
     )
 
+    def __init__(self, full_data_pdf: pd.DataFrame):
+        selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
+        self.features = torch.tensor(selected_features.values)
+        self.field_dims = selected_features.nunique() + 1
+        self.labels = torch.tensor(full_data_pdf["label"].values)
+
+    def __len__(self):
+        # The total length is the sum of all samples
+        return len(self.features)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.item()
+        return self.features[idx], self.labels[idx]
+
+
+class TrainingDataGenerator:
+    """Produce train/valid/test data loaders
+    Examples
+    --------
+    >>> import torch
+    >>> from forecaster.data.data_proprocessor import DataPreprocessor
+    >>> from forecaster.data.training_data_generator import TrainingDataGenerator
+    >>> full_data_pdf = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv").process()
+    >>> generator = TrainingDataGenerator(full_data_pdf, batch_size=1))
+    >>> next(iter(generator.train_loader))
+    [tensor([[1.3640e+03, 1.0000e+00, 4.4000e+01, 1.9645e+04, 1.8000e+01, 7.7900e+02,
+             7.0000e+00, 3.5289e+01, 1.3913e+02, 1.0000e+00, 1.0000e+00, 2.0000e+00]],
+           dtype=torch.float64), tensor([0])]
+    """
+
     def __init__(
-        self, full_data_pdf: pd.DataFrame, split_month: tuple[int, int] = (1, 2)
+        self,
+        full_data_pdf: pd.DataFrame,
+        split_month: tuple[int, int] = (1, 2),
+        batch_size: int = 128,
+        num_workers: int = 32,
     ):
-        # Drop unnecessary columns and convert to tensors
         self.full_data_pdf = full_data_pdf
         # Split indices for train, validation, and test sets
         (
@@ -41,12 +74,9 @@ class TrainingDataset(Dataset):
             self.valid_indices,
             self.test_indices,
         ) = self._split_indices(split_month)
-        selected_features = self.full_data_pdf.drop(
-            [*self._removed_id, "label"], axis=1
-        )
-        self.features = torch.tensor(selected_features.values)
-        self.field_dims = selected_features.nunique() + 1
-        self.labels = torch.tensor(self.full_data_pdf["label"].values)
+        self.dataset = ModelDataset(self.full_data_pdf)
+        self.batch_size = batch_size
+        self.num_workers = num_workers
 
     def _split_indices(
         self, split_month: tuple[int, int]
@@ -86,11 +116,31 @@ class TrainingDataset(Dataset):
 
         return train_indices, valid_indices, test_indices
 
-    def __len__(self):
-        # The total length is the sum of all samples
-        return len(self.features)
+    @property
+    def train_loader(self) -> DataLoader:
+        return DataLoader(
+            self.dataset,
+            batch_size=self.batch_size,
+            sampler=SubsetRandomSampler(self.train_indices),
+            num_workers=self.num_workers,
+        )
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.item()
-        return self.features[idx], self.labels[idx]
+    @property
+    def valid_loader(self) -> DataLoader:
+        return DataLoader(
+            self.dataset,
+            batch_size=self.batch_size,
+            sampler=SubsetRandomSampler(self.valid_indices),
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
+
+    @property
+    def test_loader(self) -> DataLoader:
+        return DataLoader(
+            self.dataset,
+            batch_size=self.batch_size,
+            sampler=SubsetRandomSampler(self.test_indices),
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
