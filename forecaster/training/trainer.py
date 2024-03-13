@@ -8,8 +8,6 @@ from forecaster.training.utils import EarlyStopper, test_model, train_model
 
 
 class Trainer:
-    _model_name = "xdfm"
-
     def __init__(
         self,
         processed_data: pd.DataFrame,
@@ -21,9 +19,9 @@ class Trainer:
         epoch: int = 5,
         dropout: float = 0.2,
         num_workers: int = 8,
-        model_name: str = None,
+        model_name: str = "xdfm",
     ) -> None:
-        self.processed_data = processed_data
+        self.generator = TrainingDataGenerator(processed_data)
         self.device = torch.device(device)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -32,22 +30,21 @@ class Trainer:
         self.epoch = epoch
         self.dropout = dropout
         self.num_workers = num_workers
-        self.model_name = model_name or self._model_name
+        self.model_name = model_name
 
         # Set up
-        self.setup_data()
+        self.setup_data_loaders()
         self.setup_model()
         self.logger = setup_logger()
 
-    def setup_data(self):
-        generator = TrainingDataGenerator(self.processed_data)
-        self.train_loader = generator.train_loader
-        self.valid_loader = generator.valid_loader
-        self.test_loader = generator.test_loader
+    def setup_data_loaders(self):
+        self.train_loader = self.generator.train_loader
+        self.valid_loader = self.generator.valid_loader
+        self.test_loader = self.generator.test_loader
 
     def setup_model(self):
         self.model = ExtremeDeepFactorizationMachineModel(
-            self.dataset.field_dims,
+            field_dims=self.generator.dataset.field_dims,
             embed_dim=16,
             cross_layer_sizes=(16, 16),
             split_half=False,
