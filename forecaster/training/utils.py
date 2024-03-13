@@ -57,9 +57,8 @@ def test_model(model, data_loader, device, top_k=10):
             predicts = torch.cat((predicts, y))
 
     targets = targets.cpu()
-    predicts = predicts.cpu()
 
-    auc_at_k = retrieval_auroc(targets, predicts, top_k=top_k)
-    recall_at_k = retrieval_recall(targets, predicts, top_k=top_k)
+    auc_at_k = retrieval_auroc(predicts, targets, top_k=top_k)
+    recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
 
     return auc_at_k, recall_at_k
