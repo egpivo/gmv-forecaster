@@ -55,7 +55,7 @@ def test_model(model, data_loader, device, top_k=10):
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
-    auc_at_k = RetrievalAUROC(top_k=k)(targets, predicts)
-    recall_at_k = RetrievalRecall(top_k=k)(targets, predicts)
+    auc_at_k = RetrievalAUROC(top_k=top_k)(targets, predicts)
+    recall_at_k = RetrievalRecall(top_k=top_k)(targets, predicts)
 
     return auc_at_k, recall_at_k
