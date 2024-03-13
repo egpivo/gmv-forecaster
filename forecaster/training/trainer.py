@@ -67,7 +67,9 @@ class Trainer:
             train_model(
                 self.model, optimizer, self.train_loader, criterion, self.device
             )
-            auc_pr, recall = test_model(self.model, self.valid_loader, self.device)
+            auc_pr, recall = test_model(
+                self.model, self.valid_loader, self.device, self.batch_size
+            )
             self.logger.info(
                 f"Epoch: {epoch_i}, Validation AUCPR: {auc_pr} Validation Recall: {recall}"
             )
@@ -78,5 +80,5 @@ class Trainer:
                 )
                 break
 
-        auc = test_model(self.model, self.test_loader, self.device)
+        auc = test_model(self.model, self.test_loader, self.device, self.batch_size)
         self.logger.info(f"Test AUC: {auc}")

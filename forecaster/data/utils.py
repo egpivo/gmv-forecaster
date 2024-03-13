@@ -9,7 +9,7 @@ def generate_negative_samples(data, num_negative_samples=5, random_state=42):
     user_purchase_freq = data["user_id"].value_counts().to_frame("freq")
 
     # Create positive samples
-    data["label"] = 1
+    data["label"] = 1 * (data["amount"] > 0)
 
     # Generate negative samples
     all_stores = data["store_id"].unique()
