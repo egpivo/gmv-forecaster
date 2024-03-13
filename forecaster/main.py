@@ -49,6 +49,7 @@ def fetch_args() -> "argparse.Namespace":
     arg_parser.add_argument(
         "--weight_decay",
         default=0.1,
+        type=float,
         dest="weight_decay",
         help=f"Weight decay",
     )

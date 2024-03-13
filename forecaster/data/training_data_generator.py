@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
@@ -27,33 +28,54 @@ class TrainingDataset(Dataset):
         "laa",
         "category",
         "amount",
+        "event_occurrence",
     )
 
-    def __init__(self, full_data_pdf, split_ratio=(0.8, 0.1)):
+    def __init__(
+        self, full_data_pdf: pd.DataFrame, split_month: tuple[int, int] = (1, 2)
+    ):
         # Drop unnecessary columns and convert to tensors
-        selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
-        self.features = torch.tensor(selected_features.values)
-        self.field_dims = selected_features.nunique() + 1
-        self.labels = torch.tensor(full_data_pdf["label"].values)
-        self.split_ratio = split_ratio
-
+        self.full_data_pdf = full_data_pdf
         # Split indices for train, validation, and test sets
         (
             self.train_indices,
             self.valid_indices,
             self.test_indices,
-        ) = self._split_indices()
+        ) = self._split_indices(split_month)
+        selected_features = self.full_data_pdf.drop(
+            [*self._removed_id, "label"], axis=1
+        )
+        self.features = torch.tensor(selected_features.values)
+        self.field_dims = selected_features.nunique() + 1
+        self.labels = torch.tensor(self.full_data_pdf["label"].values)
 
-    def _split_indices(self):
-        # Calculate lengths of splits
-        train_size = int(self.split_ratio[0] * len(self.features))
-        valid_size = int(self.split_ratio[1] * len(self.features))
+    def _split_indices(
+        self, split_month: tuple[int, int]
+    ) -> tuple[pd.Series, pd.Series, pd.Series]:
+        """Introduce a time-based split strategy"""
+        # Sort the DataFrame based on event_occurrence
+        self.full_data_pdf = self.full_data_pdf.sort_values(by="event_occurrence")
 
-        # Generate indices and split
-        indices = torch.randperm(len(self.features)).tolist()
-        train_indices = indices[:train_size]
-        valid_indices = indices[train_size : train_size + valid_size]
-        test_indices = indices[train_size + valid_size :]
+        # Set the threshold dates for validation and test sets
+        validation_threshold = self.full_data_pdf[
+            "event_occurrence"
+        ].max() - pd.DateOffset(months=split_month[1])
+        test_threshold = self.full_data_pdf["event_occurrence"].max() - pd.DateOffset(
+            months=split_month[0]
+        )
+
+        # Split indices based on time
+        train_indices = self.full_data_pdf[
+            self.full_data_pdf["event_occurrence"] < validation_threshold
+        ].index
+        valid_indices = self.full_data_pdf[
+            (self.full_data_pdf["event_occurrence"] >= validation_threshold)
+            & (self.full_data_pdf["event_occurrence"] < test_threshold)
+        ].index
+        test_indices = self.full_data_pdf[
+            self.full_data_pdf["event_occurrence"] >= test_threshold
+        ].index
+
         return train_indices, valid_indices, test_indices
 
     def __len__(self):

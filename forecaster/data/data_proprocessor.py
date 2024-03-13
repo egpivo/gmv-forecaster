@@ -23,6 +23,7 @@ class DataPreprocessor:
     _return_columns = [
         "user_id",
         "store_id",
+        "event_occurrence",
         "gender",
         "nam",
         "laa",
