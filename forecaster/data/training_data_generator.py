@@ -14,10 +14,9 @@ class TrainingDataset(Dataset):
     >>> dataset = TrainingDataset(full_data_pdf)
     >>> train_loader = torch.utils.data.DataLoader(dataset, batch_size=1, sampler=torch.utils.data.SubsetRandomSampler(dataset.train_indices))
     >>> next(iter(train_loader))
-    [tensor([[6.0500e+03, 1.0000e+00, 8.1000e+01, 6.9688e+04, 4.4000e+01, 9.3300e+02,
-              1.0000e+00, 3.8076e+01, 1.4020e+02, 0.0000e+00, 2.0000e+00, 5.0000e+00,
-              0.0000e+00]], dtype=torch.float64),
-     tensor([0])]
+    [tensor([[5.7290e+03, 1.0000e+00, 3.7000e+01, 4.5650e+03, 6.0000e+00, 1.7600e+02,
+             2.0000e+00, 3.3545e+01, 1.3042e+02, 1.0000e+00, 2.0000e+00, 5.0000e+00]],
+           dtype=torch.float64), tensor([1])]
     """
 
     _removed_id = (
@@ -51,7 +50,7 @@ class TrainingDataset(Dataset):
 
     def _split_indices(
         self, split_month: tuple[int, int]
-    ) -> tuple[pd.Series, pd.Series, pd.Series]:
+    ) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
         """Introduce a time-based split strategy"""
         # Sort the DataFrame based on event_occurrence
         self.full_data_pdf = self.full_data_pdf.sort_values(by="event_occurrence")
@@ -65,16 +64,25 @@ class TrainingDataset(Dataset):
         )
 
         # Split indices based on time
-        train_indices = self.full_data_pdf[
-            self.full_data_pdf["event_occurrence"] < validation_threshold
-        ].index
-        valid_indices = self.full_data_pdf[
-            (self.full_data_pdf["event_occurrence"] >= validation_threshold)
-            & (self.full_data_pdf["event_occurrence"] < test_threshold)
-        ].index
-        test_indices = self.full_data_pdf[
-            self.full_data_pdf["event_occurrence"] >= test_threshold
-        ].index
+        train_indices = torch.tensor(
+            self.full_data_pdf[
+                self.full_data_pdf["event_occurrence"] < validation_threshold
+            ].index,
+            dtype=torch.int64,
+        )
+        valid_indices = torch.tensor(
+            self.full_data_pdf[
+                (self.full_data_pdf["event_occurrence"] >= validation_threshold)
+                & (self.full_data_pdf["event_occurrence"] < test_threshold)
+            ].index,
+            dtype=torch.int64,
+        )
+        test_indices = torch.tensor(
+            self.full_data_pdf[
+                self.full_data_pdf["event_occurrence"] >= test_threshold
+            ].index,
+            dtype=torch.int64,
+        )
 
         return train_indices, valid_indices, test_indices
 
