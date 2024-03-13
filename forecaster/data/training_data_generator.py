@@ -10,8 +10,10 @@ class ModelDataset(Dataset):
     >>> import torch
     >>> from forecaster.data.data_proprocessor import DataPreprocessor
     >>> from forecaster.data.training_data_generator import ModelDataset
-    >>> full_data_pdf = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv").process()
-    >>> dataset = ModelDataset(full_data_pdf)
+    >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
+    >>> full_data_pdf = processor.process()
+    >>> field_dims = processor.field_dims
+    >>> dataset = ModelDataset(full_data_pdf, field_dims)
     >>> next(iter(dataset))
     (tensor([6.1000e+02, 1.0000e+00, 5.1000e+01, 8.8546e+04, 3.0000e+00, 1.0500e+02,
         8.0000e+00, 3.5647e+01, 1.4004e+02, 0.0000e+00, 1.0000e+00, 2.0000e+00],
@@ -29,10 +31,10 @@ class ModelDataset(Dataset):
         "event_occurrence",
     )
 
-    def __init__(self, full_data_pdf: pd.DataFrame):
+    def __init__(self, full_data_pdf: pd.DataFrame, field_dims: list[int]) -> None:
         selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
         self.features = torch.tensor(selected_features.values)
-        self.field_dims = selected_features.nunique() + 1
+        self.field_dims = field_dims
         self.labels = torch.tensor(full_data_pdf["label"].values)
 
     def __len__(self):
@@ -52,8 +54,10 @@ class TrainingDataGenerator:
     >>> import torch
     >>> from forecaster.data.data_proprocessor import DataPreprocessor
     >>> from forecaster.data.training_data_generator import TrainingDataGenerator
-    >>> full_data_pdf = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv").process()
-    >>> generator = TrainingDataGenerator(full_data_pdf, batch_size=1))
+    >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
+    >>> full_data_pdf = processor.process()
+    >>> field_dims = processor.field_dims
+    >>> generator = TrainingDataGenerator(full_data_pdf, field_dims, batch_size=1))
     >>> next(iter(generator.train_loader))
     [tensor([[1.3640e+03, 1.0000e+00, 4.4000e+01, 1.9645e+04, 1.8000e+01, 7.7900e+02,
              7.0000e+00, 3.5289e+01, 1.3913e+02, 1.0000e+00, 1.0000e+00, 2.0000e+00]],
@@ -63,10 +67,11 @@ class TrainingDataGenerator:
     def __init__(
         self,
         full_data_pdf: pd.DataFrame,
+        field_dims: list[int],
         split_month: tuple[int, int] = (1, 2),
         batch_size: int = 128,
         num_workers: int = 32,
-    ):
+    ) -> None:
         self.full_data_pdf = full_data_pdf
         # Split indices for train, validation, and test sets
         (
@@ -74,7 +79,7 @@ class TrainingDataGenerator:
             self.valid_indices,
             self.test_indices,
         ) = self._split_indices(split_month)
-        self.dataset = ModelDataset(self.full_data_pdf)
+        self.dataset = ModelDataset(self.full_data_pdf, field_dims)
         self.batch_size = batch_size
         self.num_workers = num_workers
 

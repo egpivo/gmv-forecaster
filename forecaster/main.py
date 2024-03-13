@@ -106,16 +106,16 @@ def fetch_args() -> "argparse.Namespace":
 
 
 def run_job(args: "argparse.Namespace") -> None:
-    processed_data = DataPreprocessor(
+    processor = DataPreprocessor(
         user_data_path=args.user_data_path,
         transaction_data_path=args.transaction_data_path,
         store_data_path=args.store_data_path,
         start_date=args.start_date,
         end_date=args.end_date,
     ).process()
-
     trainer = Trainer(
-        processed_data=processed_data,
+        processed_data=processor.process(),
+        field_dims=processor.field_dims,
         embed_dim=args.embed_dim,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,

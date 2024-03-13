@@ -37,6 +37,25 @@ class DataPreprocessor:
     0
     """
 
+    _user_fields = [
+        "user_id_label",
+        "gender_label",
+        "age",
+    ]
+    _store_fields = [
+        "store_id_label",
+        "nam_label",
+        "laa_label",
+        "category_label",
+        "lat",
+        "lon",
+    ]
+    _context_fields = [
+        "is_weekend",
+        "season",
+        "month",
+    ]
+
     _return_columns = [
         "user_id",
         "store_id",
@@ -47,20 +66,11 @@ class DataPreprocessor:
         "category",
         "amount",
         # User Field
-        "user_id_label",
-        "gender_label",
-        "age",
+        *_user_fields,
         # Store Field
-        "store_id_label",
-        "nam_label",
-        "laa_label",
-        "category_label",
-        "lat",
-        "lon",
+        *_store_fields,
         # Contex Field
-        "is_weekend",
-        "season",
-        "month",
+        *_context_fields,
         # Target
         "label",
     ]
@@ -82,6 +92,14 @@ class DataPreprocessor:
         self.store_pdf = StoreDataPreprocessor(store_data_path).process()
 
         self.num_negative_samples = num_negative_samples
+
+    @property
+    def field_dims(self) -> list[int]:
+        user_fields_dims = list(self.user_pdf[self._user_fields].nunique() + 1)
+        store_fields_dims = list(self.store_pdf[self._store_fields].nunique() + 1)
+        # is_weekends/seasons/months
+        context_fields_dims = [3, 5, 13]
+        return user_fields_dims + store_fields_dims + context_fields_dims
 
     def process(self) -> pd.DataFrame:
         label_data_pdf = generate_negative_samples(
