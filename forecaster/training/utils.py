@@ -1,7 +1,7 @@
 import os
 
 import torch
-from torchmetrics.retrieval import RetrievalAUROC, RetrievalRecall
+from torchmetrics.functional.retrieval import retrieval_auroc, retrieval_recall
 from tqdm import tqdm
 
 
@@ -55,7 +55,7 @@ def test_model(model, data_loader, device, top_k=10):
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
-    auc_at_k = RetrievalAUROC(top_k=top_k)(targets, predicts)
-    recall_at_k = RetrievalRecall(top_k=top_k)(targets, predicts)
+    auc_at_k = retrieval_auroc(targets, predicts, top_k=top_k)
+    recall_at_k = retrieval_recall(targets, predicts, top_k=top_k)
 
     return auc_at_k, recall_at_k
