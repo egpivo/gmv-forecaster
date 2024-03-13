@@ -96,11 +96,15 @@ class Trainer:
             train_model(
                 self.model, optimizer, self.train_loader, criterion, self.device
             )
-            auc = test_model(self.model, self.valid_loader, self.device)
-            self.logger.info(f"Epoch: {epoch_i}, Validation AUC: {auc}")
+            auc_pr, recall = test_model(self.model, self.valid_loader, self.device)
+            self.logger.info(
+                f"Epoch: {epoch_i}, Validation AUCPR: {auc_pr} Validation Recall: {recall}"
+            )
 
-            if not early_stopper.is_continuable(self.model, auc):
-                self.logger.info(f"Validation: Best AUC: {early_stopper.best_accuracy}")
+            if not early_stopper.is_continuable(self.model, auc_pr):
+                self.logger.info(
+                    f"Validation: Best Top-k AUC-PR: {early_stopper.best_accuracy}"
+                )
                 break
 
         auc = test_model(self.model, self.test_loader, self.device)

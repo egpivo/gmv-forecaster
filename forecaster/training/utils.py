@@ -1,7 +1,7 @@
 import os
 
 import torch
-from sklearn.metrics import roc_auc_score
+from torchmetrics.retrieval import RetrievalAUROC, RetrievalRecall
 from tqdm import tqdm
 
 
@@ -12,7 +12,7 @@ class EarlyStopper:
         self.best_accuracy = 0
         self.save_path = save_path
 
-    def is_continuable(self, model, accuracy):
+    def is_continuable(self, model, accuracy) -> bool:
         if accuracy > self.best_accuracy:
             self.best_accuracy = accuracy
             self.trial_counter = 0
@@ -45,13 +45,17 @@ def train_model(model, optimizer, data_loader, criterion, device, log_interval=1
             total_loss = 0
 
 
-def test_model(model, data_loader, device):
+def test_model(model, data_loader, device, k=10):
     model.eval()
     targets, predicts = list(), list()
+
     with torch.no_grad():
         for fields, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
             fields, target = fields.to(device), target.to(device)
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
-    return roc_auc_score(targets, predicts)
+    auc_at_k = RetrievalAUROC(k=k)(targets, predicts)
+    recall_at_k = RetrievalRecall(k=k)(targets, predicts)
+
+    return auc_at_k, recall_at_k
