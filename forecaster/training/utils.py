@@ -45,12 +45,6 @@ def train_model(model, optimizer, data_loader, criterion, device, log_interval=1
             total_loss = 0
 
 
-import torch
-from tqdm import tqdm
-
-from forecaster.training.metrics import retrieval_auroc, retrieval_recall
-
-
 def test_model(model, data_loader, device, top_k=10):
     model.eval()
     targets, predicts = torch.tensor([]).to(device), torch.tensor([]).to(device)
