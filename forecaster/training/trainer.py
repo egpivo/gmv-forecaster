@@ -27,6 +27,8 @@ class Trainer:
         num_workers: int = 8,
         model_name: str = "xdfm",
     ) -> None:
+        self.logger = setup_logger()
+
         self.generator = TrainingDataGenerator(processed_data, field_dims)
         self.embed_dim = embed_dim
         self.cross_layer_sizes = cross_layer_sizes
@@ -44,7 +46,6 @@ class Trainer:
         # Set up
         self.setup_data_loaders()
         self.model = self.setup_model()
-        self.logger = setup_logger()
 
     def setup_data_loaders(self):
         self.train_loader = self.generator.train_loader
