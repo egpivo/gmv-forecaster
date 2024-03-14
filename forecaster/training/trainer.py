@@ -21,7 +21,7 @@ class Trainer:
         batch_size: int = 128,
         weight_decay: float = 0.1,
         device: str = "cpu",
-        save_dir: str = "checkpoint/",
+        save_dir: str = "checkpoint",
         epoch: int = 5,
         dropout: float = 0.2,
         num_workers: int = 8,
@@ -78,18 +78,18 @@ class Trainer:
             train_model(
                 self.model, optimizer, self.train_loader, criterion, self.device
             )
-            hit, recall = test_model(
-                self.model, self.valid_loader, self.device, self.batch_size
-            )
+            auroc, recall = test_model(self.model, self.valid_loader, self.device, 10)
             self.logger.info(
-                f"Epoch: {epoch_i}, Validation Hit Ratio: {hit} Validation Recall: {recall}"
+                f"Epoch: {epoch_i}, Validation AUROC: {auroc} Validation Recall: {recall}"
             )
 
-            if not early_stopper.is_continuable(self.model, hit):
+            if not early_stopper.is_continuable(self.model, auroc):
                 self.logger.info(
-                    f"Validation: Best Top-k AUC-PR: {early_stopper.best_accuracy}"
+                    f"Validation: Best AUROC: {early_stopper.best_accuracy}"
                 )
                 break
 
-        auc = test_model(self.model, self.test_loader, self.device, self.batch_size)
-        self.logger.info(f"Test AUC: {auc}")
+        auroc, recall = test_model(
+            self.model, self.test_loader, self.device, self.batch_size
+        )
+        self.logger.info(f"Test AUROC: {auroc}| Test Recall: {recall}")
