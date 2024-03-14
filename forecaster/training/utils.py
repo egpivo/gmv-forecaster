@@ -1,7 +1,7 @@
 import os
 
 import torch
-from torchmetrics.functional.retrieval import retrieval_auroc, retrieval_recall
+from torchmetrics.functional.retrieval import retrieval_hit_rate, retrieval_recall
 from tqdm import tqdm
 
 
@@ -58,7 +58,7 @@ def test_model(model, data_loader, device, top_k=10):
 
     targets = targets.cpu()
 
-    auc_at_k = retrieval_auroc(predicts, targets, top_k=top_k)
+    hit_at_k = retrieval_hit_rate(predicts, targets, top_k=top_k)
     recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
 
-    return auc_at_k, recall_at_k
+    return hit_at_k, recall_at_k

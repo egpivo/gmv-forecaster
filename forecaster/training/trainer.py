@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import torch
 
@@ -33,7 +35,7 @@ class Trainer:
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.weight_decay = weight_decay
-        self.save_dir = save_dir
+        self.model_path = f"{self.save_dir}/{self.save_dir}"
         self.epoch = epoch
         self.dropout = dropout
         self.num_workers = num_workers
@@ -41,7 +43,7 @@ class Trainer:
 
         # Set up
         self.setup_data_loaders()
-        self.setup_model()
+        self.model = self.setup_model()
         self.logger = setup_logger()
 
     def setup_data_loaders(self):
@@ -50,13 +52,16 @@ class Trainer:
         self.test_loader = self.generator.test_loader
 
     def setup_model(self):
-        self.model = ExtremeDeepFactorizationMachineModel(
-            field_dims=self.generator.dataset.field_dims,
-            embed_dim=self.embed_dim,
-            cross_layer_sizes=self.cross_layer_sizes,
-            mlp_dims=self.mlp_dims,
-            dropout=self.dropout,
-        )
+        if os.path.exists(self.model_path):
+            return torch.load(self.model_path)
+        else:
+            return ExtremeDeepFactorizationMachineModel(
+                field_dims=self.generator.dataset.field_dims,
+                embed_dim=self.embed_dim,
+                cross_layer_sizes=self.cross_layer_sizes,
+                mlp_dims=self.mlp_dims,
+                dropout=self.dropout,
+            )
 
     def train(self):
         criterion = torch.nn.BCELoss()
@@ -65,22 +70,20 @@ class Trainer:
             lr=self.learning_rate,
             weight_decay=self.weight_decay,
         )
-        early_stopper = EarlyStopper(
-            num_trials=self.epoch, save_path=f"{self.save_dir}/{self.model_name}.pt"
-        )
+        early_stopper = EarlyStopper(num_trials=self.epoch, save_path=self.model_path)
 
         for epoch_i in range(self.epoch):
             train_model(
                 self.model, optimizer, self.train_loader, criterion, self.device
             )
-            auc_pr, recall = test_model(
+            hit, recall = test_model(
                 self.model, self.valid_loader, self.device, self.batch_size
             )
             self.logger.info(
-                f"Epoch: {epoch_i}, Validation AUCPR: {auc_pr} Validation Recall: {recall}"
+                f"Epoch: {epoch_i}, Validation Hit Ratio: {hit} Validation Recall: {recall}"
             )
 
-            if not early_stopper.is_continuable(self.model, auc_pr):
+            if not early_stopper.is_continuable(self.model, hit):
                 self.logger.info(
                     f"Validation: Best Top-k AUC-PR: {early_stopper.best_accuracy}"
                 )

@@ -55,7 +55,7 @@ def fetch_args() -> "argparse.Namespace":
     )
     arg_parser.add_argument(
         "--batch_size",
-        default=128,
+        default=64,
         type=int,
         dest="batch_size",
         help="Batch size",
@@ -92,8 +92,8 @@ def fetch_args() -> "argparse.Namespace":
         "--epoch",
         type=int,
         dest="epoch",
-        default=10,
-        help="Number of ephocs",
+        default=5,
+        help="Number of epochs",
     )
     arg_parser.add_argument(
         "--num_workers",
