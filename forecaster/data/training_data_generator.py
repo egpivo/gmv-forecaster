@@ -35,7 +35,7 @@ class ModelDataset(Dataset):
         selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
         self.features = torch.tensor(selected_features.values)
         self.field_dims = field_dims
-        self.labels = torch.tensor(full_data_pdf["label"].values)
+        self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
 
     def __len__(self):
         # The total length is the sum of all samples
@@ -44,7 +44,7 @@ class ModelDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.item()
-        return self.features[idx], self.labels[idx].to(torch.long)
+        return self.features[idx], self.labels[idx]
 
 
 class TrainingDataGenerator:
