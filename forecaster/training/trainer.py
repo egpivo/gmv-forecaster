@@ -35,7 +35,7 @@ class Trainer:
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.weight_decay = weight_decay
-        self.model_path = f"{self.save_dir}/{self.save_dir}"
+        self.model_path = f"{save_dir}/{model_name}.pt"
         self.epoch = epoch
         self.dropout = dropout
         self.num_workers = num_workers
@@ -53,6 +53,7 @@ class Trainer:
 
     def setup_model(self):
         if os.path.exists(self.model_path):
+            self.logger.info(f"Load the existing model on {self.model_path}")
             return torch.load(self.model_path)
         else:
             return ExtremeDeepFactorizationMachineModel(
