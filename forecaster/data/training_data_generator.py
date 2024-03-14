@@ -44,7 +44,7 @@ class ModelDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.item()
-        return self.features[idx], self.labels[idx]
+        return self.features[idx], self.labels[idx].to(torch.long)
 
 
 class TrainingDataGenerator:
