@@ -32,7 +32,9 @@ class Trainer:
         logger: logging = setup_logger(),
     ) -> None:
 
-        self.generator = TrainingDataGenerator(processed_data, field_dims)
+        self.generator = TrainingDataGenerator(
+            processed_data, field_dims, batch_size=batch_size, num_workers=num_workers
+        )
         self.embed_dim = embed_dim
         self.cross_layer_sizes = cross_layer_sizes
         self.mlp_dims = mlp_dims
