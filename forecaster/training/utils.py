@@ -48,9 +48,8 @@ def train_model(model, optimizer, data_loader, criterion, device, log_interval=1
 
 def test_model(model, data_loader, device, top_k=10):
     model.eval()
-    targets, predicts = torch.tensor([]).to(device, dtype=torch.long), torch.tensor(
-        []
-    ).to(device)
+    targets = torch.tensor([]).to(device, dtype=torch.long)
+    predicts = torch.tensor([]).to(device)
 
     with torch.no_grad():
         for fields, target in tqdm(data_loader, smoothing=0, mininterval=1.0):

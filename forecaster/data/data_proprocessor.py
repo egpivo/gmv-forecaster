@@ -60,14 +60,14 @@ class DataPreprocessor:
         "is_weekend",
         "season",
         "month",
-        "last_month_contribution",
-        "last_month_revenue",
-        "last_quarter_contribution",
-        "last_quarter_revenue",
-        "last_half_year_contribution",
-        "last_half_year_revenue",
-        "last_year_contribution",
-        "last_year_revenue",
+        "last_month_contribution_label",
+        "last_month_revenue_label",
+        "last_quarter_contribution_label",
+        "last_quarter_revenue_label",
+        "last_half_year_contribution_label",
+        "last_half_year_revenue_label",
+        "last_year_contribution_label",
+        "last_year_revenue_label",
     ]
 
     _return_columns = [
