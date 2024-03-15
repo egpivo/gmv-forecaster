@@ -1,7 +1,13 @@
 from argparse import ArgumentParser
 
+import torch
+
 from forecaster.data.data_proprocessor import DataPreprocessor
+from forecaster.inference.utils import test_model
+from forecaster.logger.logging import setup_logger
 from forecaster.training.trainer import Trainer
+
+LOGGER = setup_logger()
 
 
 def fetch_args() -> "argparse.Namespace":
@@ -105,7 +111,7 @@ def fetch_args() -> "argparse.Namespace":
     return arg_parser.parse_args()
 
 
-def run_job(args: "argparse.Namespace") -> None:
+def run_job(args: "argparse.Namespace", device: torch.device) -> None:
     processor = DataPreprocessor(
         user_data_path=args.user_data_path,
         transaction_data_path=args.transaction_data_path,
@@ -125,10 +131,24 @@ def run_job(args: "argparse.Namespace") -> None:
         dropout=args.dropout,
         num_workers=args.num_workers,
         model_name=args.model_name,
+        device=device,
+        logger=LOGGER,
     )
     trainer.train()
+
+    recall_at_k = test_model(trainer.model, trainer.test_loader, device)
+    LOGGER.info(f"Test Recall: {recall_at_k}")
 
 
 if __name__ == "__main__":
     args = fetch_args()
-    run_job(args)
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        LOGGER.info(
+            "Using GPU:", torch.cuda.get_device_name(0)
+        )  # Print the GPU device name
+    else:
+        device = torch.device("cpu")
+        LOGGER.info("CUDA is not available. Using CPU instead.")
+
+    run_job(args, device)

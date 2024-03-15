@@ -1,63 +1,72 @@
-import os
-
 import torch
+from torch import Tensor
+from torch.nn import Module
+from torch.nn.modules.loss import _Loss
+from torch.optim import Optimizer
+from torch.utils.data import DataLoader
 from torchmetrics.functional.classification import binary_auroc
-from torchmetrics.functional.retrieval import retrieval_recall
 from tqdm import tqdm
 
 
-class EarlyStopper:
-    def __init__(self, num_trials, save_path):
-        self.num_trials = num_trials
-        self.trial_counter = 0
-        self.best_accuracy = 0
-        self.save_path = save_path
+def train_model(
+    model: Module,
+    optimizer: Optimizer,
+    data_loader: DataLoader,
+    criterion: _Loss,
+    device: str,
+    log_interval: int = 100,
+) -> None:
+    """
+    Train the model using the provided data loader.
 
-    def is_continuable(self, model, accuracy) -> bool:
-        if accuracy > self.best_accuracy:
-            self.best_accuracy = accuracy
-            self.trial_counter = 0
+    Args:
+        model (Module): The model to be trained.
+        optimizer (Optimizer): Optimizer for updating model parameters.
+        data_loader (DataLoader): DataLoader containing the training dataset.
+        criterion (_Loss): Loss function used for training.
+        device (str): Device to run the training on (e.g., 'cpu', 'cuda').
+        log_interval (int): Interval for logging training loss.
 
-            # Create the directory if it doesn't exist
-            os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
-            torch.save(model, self.save_path)
-            return True
-        elif self.trial_counter + 1 < self.num_trials:
-            self.trial_counter += 1
-            return True
-        else:
-            return False
-
-
-def train_model(model, optimizer, data_loader, criterion, device, log_interval=100):
+    Returns:
+        None
+    """
     model.train()
     total_loss = 0
-    tk0 = tqdm(data_loader, smoothing=0, mininterval=1.0)
-    for i, (fields, target) in enumerate(tk0):
-        fields, target = fields.to(device), target.to(device)
-        y = model(fields)
+    wrapped_loader = tqdm(data_loader, smoothing=0, mininterval=1.0)
+    for i, (input_data, target) in enumerate(wrapped_loader):
+        input_data, target = input_data.to(device), target.to(device)
+        y = model(input_data)
         loss = criterion(y, target.float())
         model.zero_grad()
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
         if (i + 1) % log_interval == 0:
-            tk0.set_postfix(loss=total_loss / log_interval)
+            wrapped_loader.set_postfix(loss=total_loss / log_interval)
             total_loss = 0
 
 
-def test_model(model, data_loader, device, top_k=10):
+def val_model(model: Module, data_loader: DataLoader, device: str) -> Tensor:
+    """
+    Evaluate the model using the provided data loader.
+
+    Args:
+        model (Module): The trained model to be evaluated.
+        data_loader (DataLoader): DataLoader containing the evaluation dataset.
+        device (str): Device to run the evaluation on (e.g., 'cpu', 'cuda').
+
+    Returns: AUROC score
+    """
     model.eval()
     targets = torch.tensor([]).to(device, dtype=torch.long)
     predicts = torch.tensor([]).to(device)
 
     with torch.no_grad():
-        for fields, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
-            fields, target = fields.to(device), target.to(device)
-            predict = model(fields)
+        for input_data, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
+            input_data, target = input_data.to(device), target.to(device)
+            predict = model(input_data)
             targets = torch.cat((targets, target))
             predicts = torch.cat((predicts, predict))
     auroc = binary_auroc(predicts, targets)
-    recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
 
-    return auroc, recall_at_k
+    return auroc

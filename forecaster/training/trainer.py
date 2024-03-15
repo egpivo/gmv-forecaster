@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pandas as pd
@@ -5,8 +6,9 @@ import torch
 
 from forecaster.data.training_data_generator import TrainingDataGenerator
 from forecaster.logger.logging import setup_logger
+from forecaster.training.early_stopper import EarlyStopper
 from forecaster.training.model.xdfm import ExtremeDeepFactorizationMachineModel
-from forecaster.training.utils import EarlyStopper, test_model, train_model
+from forecaster.training.utils import train_model, val_model
 
 
 class Trainer:
@@ -26,8 +28,8 @@ class Trainer:
         dropout: float = 0.2,
         num_workers: int = 8,
         model_name: str = "xdfm",
+        logger: logging = setup_logger(),
     ) -> None:
-        self.logger = setup_logger()
 
         self.generator = TrainingDataGenerator(processed_data, field_dims)
         self.embed_dim = embed_dim
@@ -42,6 +44,7 @@ class Trainer:
         self.dropout = dropout
         self.num_workers = num_workers
         self.model_name = model_name
+        self.logger = logger
 
         # Set up
         self.setup_data_loaders()
@@ -78,18 +81,11 @@ class Trainer:
             train_model(
                 self.model, optimizer, self.train_loader, criterion, self.device
             )
-            auroc, recall = test_model(self.model, self.valid_loader, self.device, 10)
-            self.logger.info(
-                f"Epoch: {epoch_i}, Validation AUROC: {auroc} Validation Recall: {recall}"
-            )
+            auroc = val_model(self.model, self.valid_loader, self.device)
+            self.logger.info(f"Epoch: {epoch_i}, Validation AUROC: {auroc}")
 
             if not early_stopper.is_continuable(self.model, auroc):
                 self.logger.info(
                     f"Validation: Best AUROC: {early_stopper.best_accuracy}"
                 )
                 break
-
-        auroc, recall = test_model(
-            self.model, self.test_loader, self.device, self.batch_size
-        )
-        self.logger.info(f"Test AUROC: {auroc}| Test Recall: {recall}")
