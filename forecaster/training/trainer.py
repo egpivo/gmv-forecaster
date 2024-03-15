@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Union
+from typing import Optional, Union
 
 import pandas as pd
 import torch
@@ -29,7 +29,7 @@ class Trainer:
         dropout: float = 0.2,
         num_workers: int = 8,
         model_name: str = "xdfm",
-        logger: logging = setup_logger(),
+        logger: Optional[logging.Logger] = None,
     ) -> None:
 
         self.generator = TrainingDataGenerator(
@@ -47,7 +47,7 @@ class Trainer:
         self.dropout = dropout
         self.num_workers = num_workers
         self.model_name = model_name
-        self.logger = logger
+        self.logger = logger or setup_logger()
 
         # Set up
         self.setup_data_loaders()
