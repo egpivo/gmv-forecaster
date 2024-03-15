@@ -1,3 +1,5 @@
+from typing import Union
+
 import torch
 from torch import Tensor
 from torch.nn import Module
@@ -13,7 +15,7 @@ def train_model(
     optimizer: Optimizer,
     data_loader: DataLoader,
     criterion: _Loss,
-    device: str,
+    device: Union[str, torch.device],
     log_interval: int = 100,
 ) -> None:
     """
@@ -46,7 +48,11 @@ def train_model(
             total_loss = 0
 
 
-def val_model(model: Module, data_loader: DataLoader, device: str) -> Tensor:
+def val_model(
+    model: Module,
+    data_loader: DataLoader,
+    device: Union[str, torch.device],
+) -> Tensor:
     """
     Evaluate the model using the provided data loader.
 

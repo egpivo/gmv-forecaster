@@ -61,7 +61,7 @@ def fetch_args() -> "argparse.Namespace":
     )
     arg_parser.add_argument(
         "--batch_size",
-        default=64,
+        default=256,
         type=int,
         dest="batch_size",
         help="Batch size",

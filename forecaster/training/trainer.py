@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Union
 
 import pandas as pd
 import torch
@@ -22,7 +23,7 @@ class Trainer:
         learning_rate: float = 1e-3,
         batch_size: int = 128,
         weight_decay: float = 0.1,
-        device: str = "cpu",
+        device: Union[str, torch.device] = "cpu",
         save_dir: str = "checkpoint",
         epoch: int = 5,
         dropout: float = 0.2,
