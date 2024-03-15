@@ -56,9 +56,6 @@ def test_model(model, data_loader, device, top_k=10):
             predict = model(fields)
             targets = torch.cat((targets, target))
             predicts = torch.cat((predicts, predict))
-
-    targets = targets.cpu()
-
     auroc = binary_auroc(predicts, targets)
     recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
 

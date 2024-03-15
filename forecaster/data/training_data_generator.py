@@ -15,20 +15,25 @@ class ModelDataset(Dataset):
     >>> field_dims = processor.field_dims
     >>> dataset = ModelDataset(full_data_pdf, field_dims)
     >>> next(iter(dataset))
-    (tensor([6.1000e+02, 1.0000e+00, 5.1000e+01, 8.8546e+04, 3.0000e+00, 1.0500e+02,
-        8.0000e+00, 3.5647e+01, 1.4004e+02, 0.0000e+00, 1.0000e+00, 2.0000e+00],
-       dtype=torch.float64), tensor(1))
+    (tensor([5.1540e+03, 1.0000e+00, 4.0000e+00, 6.2813e+04, 3.5000e+01, 5.5100e+02,
+             4.0000e+00, 5.0000e+00, 1.0000e+00, 3.0000e+00, 6.0000e+00, 4.0429e+04,
+             0.0000e+00, 7.3625e+04, 0.0000e+00, 1.4621e+05, 1.2800e+03, 3.1086e+05,
+             1.5380e+03], dtype=torch.float64),
+     tensor(0))
     """
 
     _removed_id = (
         "user_id",
         "store_id",
         "gender",
+        "age",
         "nam",
         "laa",
         "category",
         "amount",
         "event_occurrence",
+        "lat",
+        "lon",
     )
 
     def __init__(self, full_data_pdf: pd.DataFrame, field_dims: list[int]) -> None:
@@ -57,11 +62,13 @@ class TrainingDataGenerator:
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
     >>> full_data_pdf = processor.process()
     >>> field_dims = processor.field_dims
-    >>> generator = TrainingDataGenerator(full_data_pdf, field_dims, batch_size=1))
+    >>> generator = TrainingDataGenerator(full_data_pdf, field_dims, batch_size=1)
     >>> next(iter(generator.train_loader))
-    [tensor([[1.3640e+03, 1.0000e+00, 4.4000e+01, 1.9645e+04, 1.8000e+01, 7.7900e+02,
-             7.0000e+00, 3.5289e+01, 1.3913e+02, 1.0000e+00, 1.0000e+00, 2.0000e+00]],
-           dtype=torch.float64), tensor([0])]
+    [tensor([[6.0890e+03, 1.0000e+00, 1.0000e+00, 2.4440e+04, 3.5000e+01, 1.2060e+03,
+              7.0000e+00, 1.0000e+00, 1.0000e+00, 4.0000e+00, 1.1000e+01, 5.6420e+03,
+              9.6320e+03, 6.3964e+04, 2.1280e+04, 1.0981e+05, 5.8309e+04, 1.9962e+05,
+              8.4560e+04]], dtype=torch.float64),
+     tensor([1])]
     """
 
     def __init__(

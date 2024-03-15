@@ -2,7 +2,12 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 from forecaster.data.data_handler import DataHandler
-from forecaster.data.utils import generate_negative_samples
+from forecaster.data.utils import (
+    create_quantile_labels,
+    create_spatial_labels_kmeans,
+    generate_gmv_label_by_periods,
+    generate_negative_samples,
+)
 
 UNSEEN_USER_ID = "-1"
 UNSEEN_STORE_ID = "-1"
@@ -32,28 +37,37 @@ class DataPreprocessor:
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
     >>> pdf = processor.process()
     >>> pdf.shape
-    (9493566, 21)
+    (9493566, 28)
     >>> pdf.isnull().sum().sum()
     0
+    >>> processor.field_dims
+    [9963, 5, 6, 99993, 49, 1678, 19, 11, 3, 5, 13, 6, 6, 6, 6, 6, 6, 6, 6]
     """
 
     _user_fields = [
         "user_id_label",
         "gender_label",
-        "age",
+        "age_label",
     ]
     _store_fields = [
         "store_id_label",
         "nam_label",
         "laa_label",
         "category_label",
-        "lat",
-        "lon",
+        "spatial_label",
     ]
     _context_fields = [
         "is_weekend",
         "season",
         "month",
+        "last_month_contribution",
+        "last_month_revenue",
+        "last_quarter_contribution",
+        "last_quarter_revenue",
+        "last_half_year_contribution",
+        "last_half_year_revenue",
+        "last_year_contribution",
+        "last_year_revenue",
     ]
 
     _return_columns = [
@@ -61,10 +75,13 @@ class DataPreprocessor:
         "store_id",
         "event_occurrence",
         "gender",
+        "age",
         "nam",
         "laa",
         "category",
         "amount",
+        "lat",
+        "lon",
         # User Field
         *_user_fields,
         # Store Field
@@ -81,24 +98,29 @@ class DataPreprocessor:
         transaction_data_path: str,
         store_data_path: str,
         num_negative_samples: int = 5,
+        num_quantiles: int = 5,
         start_date: str = None,
         end_date: str = None,
     ) -> None:
-
-        self.user_pdf = UserDataPreprocessor(user_data_path).process()
+        self.user_pdf = UserDataPreprocessor(user_data_path, num_quantiles).process()
         self.transaction_pdf = TransactionDataPreprocessor(
             transaction_data_path, start_date, end_date
         ).process()
         self.store_pdf = StoreDataPreprocessor(store_data_path).process()
-
+        self.num_quantiles = num_quantiles
         self.num_negative_samples = num_negative_samples
 
     @property
     def field_dims(self) -> list[int]:
         user_fields_dims = list(self.user_pdf[self._user_fields].nunique() + 1)
         store_fields_dims = list(self.store_pdf[self._store_fields].nunique() + 1)
-        # is_weekends/seasons/months
-        context_fields_dims = [3, 5, 13]
+        # is_weekends/seasons/months/gmv-like features
+        context_fields_dims = [
+            3,
+            5,
+            13,
+            *[self.num_quantiles + 1] * (len(self._context_fields) - 3),
+        ]
         return user_fields_dims + store_fields_dims + context_fields_dims
 
     def process(self) -> pd.DataFrame:
@@ -108,12 +130,19 @@ class DataPreprocessor:
         added_temporal_features = transform_temporal_features(label_data_pdf)
         merged_data_pdf = pd.merge(
             pd.merge(
-                added_temporal_features, self.user_pdf, on=["user_id"], how="left"
+                added_temporal_features, self.user_pdf, on=["user_id"], how="inner"
             ),
             self.store_pdf,
             on=["store_id"],
-            how="left",
+            how="inner",
         )
+        merged_data_pdf = generate_gmv_label_by_periods(
+            merged_data_pdf, "store_id", "revenue", self.num_quantiles
+        )
+        merged_data_pdf = generate_gmv_label_by_periods(
+            merged_data_pdf, "user_id", "contribution", self.num_quantiles
+        )
+
         return merged_data_pdf[self._return_columns]
 
 
@@ -125,13 +154,16 @@ class UserDataPreprocessor:
         "age",
         "user_id_label",
         "gender_label",
+        "age_label",
     ]
 
     def __init__(
         self,
         data_path: str,
+        num_quantiles: int = 5,
     ) -> None:
         self.user_pdf = DataHandler.fetch_user_data(data_path)
+        self.num_quantiles = num_quantiles
 
     def process(self) -> pd.DataFrame:
         """Force the dataset with None tuples for resolving cold-start issues"""
@@ -148,6 +180,10 @@ class UserDataPreprocessor:
         # Label encoding
         for column in ("user_id", "gender"):
             user_pdf[f"{column}_label"] = label_encode(user_pdf[column])
+        # Discretion
+        user_pdf["age_label"] = create_quantile_labels(
+            user_pdf, "age", num_quantiles=self.num_quantiles
+        )
 
         return user_pdf[self._return_columns]
 
@@ -165,13 +201,12 @@ class StoreDataPreprocessor:
         "nam_label",
         "laa_label",
         "category_label",
+        "spatial_label",
     ]
 
-    def __init__(
-        self,
-        data_path: str,
-    ) -> None:
+    def __init__(self, data_path: str, num_clusters: int = 10) -> None:
         self.store_pdf = DataHandler.fetch_store_data(data_path)
+        self.num_clusters = num_clusters
 
     def process(self) -> pd.DataFrame:
         store_pdf = self.store_pdf.rename({"id": "store_id"}, axis=1)
@@ -189,21 +224,32 @@ class StoreDataPreprocessor:
         # Label encoding
         for column in ("store_id", "nam", "laa", "category"):
             store_pdf[f"{column}_label"] = label_encode(store_pdf[column])
+
+        store_pdf["spatial_label"] = create_spatial_labels_kmeans(
+            store_pdf, num_clusters=self.num_clusters
+        )
         return store_pdf
 
 
 class TransactionDataPreprocessor:
-    _return_columns = ["user_id", "store_id", "event_occurrence", "amount"]
+    _return_columns = [
+        "user_id",
+        "store_id",
+        "event_occurrence",
+        "amount",
+    ]
 
     def __init__(
         self,
         data_path: str,
         start_date: str = None,
         end_date: str = None,
+        num_quantiles: int = 5,
     ) -> None:
         self.transaction_pdf = DataHandler.fetch_transaction_data(data_path)
         self.start_date = start_date
         self.end_date = end_date
+        self.num_quantiles = num_quantiles
 
     def process(self) -> pd.DataFrame:
         # Filter data in a range
@@ -230,5 +276,4 @@ class TransactionDataPreprocessor:
             "event_occurrence"
         ].fillna(transaction_pdf["event_occurrence"].median())
         transaction_pdf["amount"] = transaction_pdf["amount"].fillna(0)
-
         return transaction_pdf[self._return_columns]
