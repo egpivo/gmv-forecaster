@@ -9,7 +9,7 @@ from forecaster.data.training_data_generator import TrainingDataGenerator
 from forecaster.logger.logging import setup_logger
 from forecaster.training.early_stopper import EarlyStopper
 from forecaster.training.model.xdfm import ExtremeDeepFactorizationMachineModel
-from forecaster.training.utils import train_model, val_model
+from forecaster.training.utils import train_model, validate_model
 
 
 class Trainer:
@@ -84,11 +84,9 @@ class Trainer:
             train_model(
                 self.model, optimizer, self.train_loader, criterion, self.device
             )
-            auroc = val_model(self.model, self.valid_loader, self.device)
-            self.logger.info(f"Epoch: {epoch_i}, Validation AUROC: {auroc}")
+            auroc = validate_model(self.model, self.valid_loader, self.device)
+            self.logger.info(f"Epoch: {epoch_i}, Validation AUC: {auroc}")
 
             if not early_stopper.dose_continue_training(self.model, auroc):
-                self.logger.info(
-                    f"Validation: Best AUROC: {early_stopper.best_accuracy}"
-                )
+                self.logger.info(f"Validation: Best AUC: {early_stopper.best_metric}")
                 break
