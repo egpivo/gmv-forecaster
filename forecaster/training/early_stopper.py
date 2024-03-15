@@ -1,4 +1,5 @@
 import os
+from typing import Union
 
 import torch
 
@@ -18,22 +19,25 @@ class EarlyStopper:
         """
         self.num_trials = num_trials
         self.trial_counter = 0
-        self.best_accuracy = 0
+        self.best_metric = float("-inf")
         self.save_path = save_path
 
-    def continue_training(self, model: torch.nn.Module, accuracy: float) -> bool:
+    def dose_continue_training(
+        self, model: torch.nn.Module, metric: Union[float, torch.Tensor]
+    ) -> bool:
         """
-        Decide whether to continue training based on the current accuracy.
+        Decide whether to continue training based on the current metric.
 
         Args:
             model: Model being trained.
-            accuracy (float): Current accuracy of the model.
+            metric (float or torch.Tensor): Current metric of the model.
 
         Returns:
             bool: True if training should continue, False otherwise.
         """
-        if accuracy > self.best_accuracy:
-            self.best_accuracy = accuracy
+        metric_value = metric.item() if isinstance(metric, torch.Tensor) else metric
+        if metric_value > self.best_metric:
+            self.best_metric = metric_value
             self.trial_counter = 0
 
             # Create the directory if it doesn't exist

@@ -87,7 +87,7 @@ class Trainer:
             auroc = val_model(self.model, self.valid_loader, self.device)
             self.logger.info(f"Epoch: {epoch_i}, Validation AUROC: {auroc}")
 
-            if not early_stopper.is_continuable(self.model, auroc):
+            if not early_stopper.dose_continue_training(self.model, auroc):
                 self.logger.info(
                     f"Validation: Best AUROC: {early_stopper.best_accuracy}"
                 )

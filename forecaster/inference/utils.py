@@ -1,11 +1,10 @@
 import torch
-from torch import Tensor
 from torch.utils.data import DataLoader
 from torchmetrics.functional.retrieval import retrieval_recall
 from tqdm import tqdm
 
 
-def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> Tensor:
+def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> float:
     """
     Evaluate the model using the provided data loader.
 
@@ -15,7 +14,8 @@ def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> Tenso
         device: Device to run the evaluation on (e.g., 'cpu', 'cuda').
         top_k (int): Number of top predictions to consider for recall calculation.
 
-    Returns: recall@k score.
+    Returns:
+        float: recall@k score.
     """
     model.eval()
     targets = torch.tensor([]).to(device, dtype=torch.long)
@@ -30,4 +30,4 @@ def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> Tenso
 
     recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
 
-    return recall_at_k
+    return recall_at_k.item()
