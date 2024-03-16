@@ -1,7 +1,6 @@
 import pandas as pd
 
 from forecaster.data.data_handler import DataHandler
-from forecaster.data.data_proprocessor import label_encode, transform_temporal_features
 from forecaster.data.utils import (
     calculate_transaction_age_label,
     create_quantile_labels,
@@ -10,6 +9,8 @@ from forecaster.data.utils import (
     generate_negative_samples,
     generate_purchase_label_by_periods,
     generate_recency_label,
+    label_encode,
+    transform_temporal_features,
 )
 
 UNSEEN_USER_ID = "-1"
