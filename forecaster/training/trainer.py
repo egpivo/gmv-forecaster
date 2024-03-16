@@ -72,7 +72,7 @@ class Trainer:
             )
 
     def train(self):
-        criterion = torch.nn.BCELoss()
+        loss = torch.nn.BCELoss()
         optimizer = torch.optim.Adam(
             params=self.model.parameters(),
             lr=self.learning_rate,
@@ -81,9 +81,7 @@ class Trainer:
         early_stopper = EarlyStopper(num_trials=self.epoch, save_path=self.model_path)
 
         for epoch_i in range(self.epoch):
-            train_model(
-                self.model, optimizer, self.train_loader, criterion, self.device
-            )
+            train_model(self.model, optimizer, self.train_loader, loss, self.device)
             auroc = validate_model(self.model, self.valid_loader, self.device)
             self.logger.info(f"Epoch: {epoch_i}, Validation AUC: {auroc}")
 

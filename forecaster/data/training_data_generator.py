@@ -15,10 +15,10 @@ class ModelDataset(Dataset):
     >>> field_dims = processor.field_dims
     >>> dataset = ModelDataset(full_data_pdf, field_dims)
     >>> next(iter(dataset))
-    (tensor([5.1540e+03, 1.0000e+00, 4.0000e+00, 6.2813e+04, 3.5000e+01, 5.5100e+02,
-             4.0000e+00, 5.0000e+00, 1.0000e+00, 3.0000e+00, 6.0000e+00, 4.0429e+04,
-             0.0000e+00, 7.3625e+04, 0.0000e+00, 1.4621e+05, 1.2800e+03, 3.1086e+05,
-             1.5380e+03], dtype=torch.float64),
+    (tensor([ 5154,     1,     4, 62813,    35,   551,     4,     7,     9,     5,
+                 1,     3,     6,   559,     4,     0,     3,     0,     3,     1,
+                 3,     0,     1,     2,     1,     0,     1,     0,     1,     1,
+                 0,     0]),
      tensor(0))
     """
 
@@ -64,11 +64,10 @@ class TrainingDataGenerator:
     >>> field_dims = processor.field_dims
     >>> generator = TrainingDataGenerator(full_data_pdf, field_dims, batch_size=1)
     >>> next(iter(generator.train_loader))
-    [tensor([[6.0890e+03, 1.0000e+00, 1.0000e+00, 2.4440e+04, 3.5000e+01, 1.2060e+03,
-              7.0000e+00, 1.0000e+00, 1.0000e+00, 4.0000e+00, 1.1000e+01, 5.6420e+03,
-              9.6320e+03, 6.3964e+04, 2.1280e+04, 1.0981e+05, 5.8309e+04, 1.9962e+05,
-              8.4560e+04]], dtype=torch.float64),
-     tensor([1])]
+    [tensor([[7607,    0,    0, 1468,   20,  675,   17,    5,   12,    0,    0,    4,
+                10,   67,    2,    0,    1,    0,    0,    0,    0,    1,    1,    0,
+                 2,    2,    2,    2,    2,    2,    0,    3]]),
+     tensor([0])]
     """
 
     def __init__(

@@ -1,27 +1,19 @@
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 
 from forecaster.data.data_handler import DataHandler
+from forecaster.data.data_proprocessor import label_encode, transform_temporal_features
 from forecaster.data.utils import (
+    calculate_transaction_age_label,
     create_quantile_labels,
     create_spatial_labels_kmeans,
     generate_gmv_label_by_periods,
     generate_negative_samples,
+    generate_purchase_label_by_periods,
+    generate_recency_label,
 )
 
 UNSEEN_USER_ID = "-1"
 UNSEEN_STORE_ID = "-1"
-
-
-def label_encode(column: pd.Series) -> pd.Series:
-    return LabelEncoder().fit_transform(column)
-
-
-def transform_temporal_features(pdf: pd.DataFrame) -> pd.DataFrame:
-    pdf["is_weekend"] = (pdf["event_occurrence"].dt.weekday >= 5) * 1
-    pdf["season"] = (pdf["event_occurrence"].dt.month % 12 + 3) // 3
-    pdf["month"] = pdf["event_occurrence"].dt.month
-    return pdf
 
 
 class DataPreprocessor:
@@ -57,17 +49,30 @@ class DataPreprocessor:
         "spatial_label",
     ]
     _context_fields = [
+        "hour",
+        "weekday",
         "is_weekend",
         "season",
         "month",
-        "last_month_contribution_label",
-        "last_month_revenue_label",
-        "last_quarter_contribution_label",
-        "last_quarter_revenue_label",
-        "last_half_year_contribution_label",
-        "last_half_year_revenue_label",
-        "last_year_contribution_label",
-        "last_year_revenue_label",
+        "transaction_age",
+        "last_month_user_gmv_label",
+        "last_month_store_gmv_label",
+        "last_quarter_user_gmv_label",
+        "last_quarter_store_gmv_label",
+        "last_half_year_user_gmv_label",
+        "last_half_year_store_gmv_label",
+        "last_year_user_gmv_label",
+        "last_year_store_gmv_label",
+        "last_month_user_purchase_label",
+        "last_month_store_purchase_label",
+        "last_quarter_user_purchase_label",
+        "last_quarter_store_purchase_label",
+        "last_half_year_user_purchase_label",
+        "last_half_year_store_purchase_label",
+        "last_year_user_purchase_label",
+        "last_year_store_purchase_label",
+        "user_recency_label",
+        "store_recency_label",
     ]
 
     _return_columns = [
@@ -90,6 +95,13 @@ class DataPreprocessor:
         *_context_fields,
         # Target
         "label",
+    ]
+    _temporal_dims = [
+        9,  # trimmed hour
+        8,  # weekday
+        3,  # is_weekend
+        5,  # season
+        13,  # month
     ]
 
     def __init__(
@@ -114,12 +126,10 @@ class DataPreprocessor:
     def field_dims(self) -> list[int]:
         user_fields_dims = list(self.user_pdf[self._user_fields].nunique() + 1)
         store_fields_dims = list(self.store_pdf[self._store_fields].nunique() + 1)
-        # is_weekends/seasons/months/gmv-like features
         context_fields_dims = [
-            3,
-            5,
-            13,
-            *[self.num_quantiles + 1] * (len(self._context_fields) - 3),
+            *self._temporal_dims,
+            *[self.num_quantiles + 1]
+            * (len(self._context_fields) - len(self._temporal_dims)),
         ]
         return user_fields_dims + store_fields_dims + context_fields_dims
 
@@ -136,11 +146,27 @@ class DataPreprocessor:
             on=["store_id"],
             how="inner",
         )
-        merged_data_pdf = generate_gmv_label_by_periods(
-            merged_data_pdf, "store_id", "revenue", self.num_quantiles
+        # Return transaction age label
+        merged_data_pdf = calculate_transaction_age_label(
+            merged_data_pdf, self.num_quantiles
         )
         merged_data_pdf = generate_gmv_label_by_periods(
-            merged_data_pdf, "user_id", "contribution", self.num_quantiles
+            merged_data_pdf, "store_id", "store", self.num_quantiles
+        )
+        merged_data_pdf = generate_gmv_label_by_periods(
+            merged_data_pdf, "user_id", "user", self.num_quantiles
+        )
+        merged_data_pdf = generate_purchase_label_by_periods(
+            merged_data_pdf, "store_id", "store", self.num_quantiles
+        )
+        merged_data_pdf = generate_purchase_label_by_periods(
+            merged_data_pdf, "user_id", "user", self.num_quantiles
+        )
+        merged_data_pdf = generate_recency_label(
+            merged_data_pdf, "store_id", "store", self.num_quantiles
+        )
+        merged_data_pdf = generate_recency_label(
+            merged_data_pdf, "user_id", "user", self.num_quantiles
         )
 
         return merged_data_pdf[self._return_columns]
