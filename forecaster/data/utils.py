@@ -185,7 +185,7 @@ def generate_purchase_label_by_periods(df, group_column, preffix, num_quantiles)
     return df
 
 
-def generate_recency_label(df, group_column, prefix, num_quantiles):
+def generate_recency_label(df, group_column, prefix):
     """
     Calculate recency for users or stores based on their transaction history.
 
@@ -216,7 +216,7 @@ def generate_recency_label(df, group_column, prefix, num_quantiles):
     df[column_name] = (
         df[group_column].map(recency_data).fillna((last_date - earliest_date).days)
     )
-    df[f"{column_name}_label"] = create_quantile_labels(df, column_name, num_quantiles)
+    df[f"{column_name}_label"] = 1 * (df[column_name] > 0)
     return df
 
 

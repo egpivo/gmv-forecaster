@@ -117,7 +117,8 @@ class DataPreprocessor:
     def add_context_features(self, df: pd.DataFrame) -> pd.DataFrame:
         # Return transaction age label
         df = calculate_transaction_age_label(df, self.num_quantiles)
-        df = generate_gmv_label_by_periods(df, "store_id", "store", self.num_quantiles)
+        # The number of quantile set 3 for store
+        df = generate_gmv_label_by_periods(df, "store_id", "store", 3)
         df = generate_gmv_label_by_periods(df, "user_id", "user", self.num_quantiles)
         df = generate_purchase_label_by_periods(
             df, "store_id", "store", self.num_quantiles
@@ -125,8 +126,8 @@ class DataPreprocessor:
         df = generate_purchase_label_by_periods(
             df, "user_id", "user", self.num_quantiles
         )
-        df = generate_recency_label(df, "store_id", "store", self.num_quantiles)
-        df = generate_recency_label(df, "user_id", "user", self.num_quantiles)
+        df = generate_recency_label(df, "store_id", "store")
+        df = generate_recency_label(df, "user_id", "user")
         return df
 
     def process(self) -> pd.DataFrame:
