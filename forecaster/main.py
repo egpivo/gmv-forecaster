@@ -121,7 +121,6 @@ def run_job(args: "argparse.Namespace", device: torch.device) -> None:
     )
     trainer = Trainer(
         processed_data=processor.process(),
-        field_dims=processor.field_dims,
         embed_dim=args.embed_dim,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,

@@ -30,11 +30,9 @@ class DataPreprocessor:
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
     >>> pdf = processor.process()
     >>> pdf.shape
-    (9493566, 28)
+    (9493566, 44)
     >>> pdf.isnull().sum().sum()
     0
-    >>> processor.field_dims
-    [9963, 5, 6, 99993, 49, 1678, 19, 11, 3, 5, 13, 6, 6, 6, 6, 6, 6, 6, 6]
     """
 
     _user_fields = [
@@ -97,13 +95,6 @@ class DataPreprocessor:
         # Target
         "label",
     ]
-    _temporal_dims = [
-        9,  # trimmed hour
-        8,  # weekday
-        3,  # is_weekend
-        5,  # season
-        13,  # month
-    ]
 
     def __init__(
         self,
@@ -123,16 +114,20 @@ class DataPreprocessor:
         self.num_quantiles = num_quantiles
         self.num_negative_samples = num_negative_samples
 
-    @property
-    def field_dims(self) -> list[int]:
-        user_fields_dims = list(self.user_pdf[self._user_fields].nunique() + 1)
-        store_fields_dims = list(self.store_pdf[self._store_fields].nunique() + 1)
-        context_fields_dims = [
-            *self._temporal_dims,
-            *[self.num_quantiles + 1]
-            * (len(self._context_fields) - len(self._temporal_dims)),
-        ]
-        return user_fields_dims + store_fields_dims + context_fields_dims
+    def add_context_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        # Return transaction age label
+        df = calculate_transaction_age_label(df, self.num_quantiles)
+        df = generate_gmv_label_by_periods(df, "store_id", "store", self.num_quantiles)
+        df = generate_gmv_label_by_periods(df, "user_id", "user", self.num_quantiles)
+        df = generate_purchase_label_by_periods(
+            df, "store_id", "store", self.num_quantiles
+        )
+        df = generate_purchase_label_by_periods(
+            df, "user_id", "user", self.num_quantiles
+        )
+        df = generate_recency_label(df, "store_id", "store", self.num_quantiles)
+        df = generate_recency_label(df, "user_id", "user", self.num_quantiles)
+        return df
 
     def process(self) -> pd.DataFrame:
         label_data_pdf = generate_negative_samples(
@@ -147,30 +142,9 @@ class DataPreprocessor:
             on=["store_id"],
             how="inner",
         )
-        # Return transaction age label
-        merged_data_pdf = calculate_transaction_age_label(
-            merged_data_pdf, self.num_quantiles
-        )
-        merged_data_pdf = generate_gmv_label_by_periods(
-            merged_data_pdf, "store_id", "store", self.num_quantiles
-        )
-        merged_data_pdf = generate_gmv_label_by_periods(
-            merged_data_pdf, "user_id", "user", self.num_quantiles
-        )
-        merged_data_pdf = generate_purchase_label_by_periods(
-            merged_data_pdf, "store_id", "store", self.num_quantiles
-        )
-        merged_data_pdf = generate_purchase_label_by_periods(
-            merged_data_pdf, "user_id", "user", self.num_quantiles
-        )
-        merged_data_pdf = generate_recency_label(
-            merged_data_pdf, "store_id", "store", self.num_quantiles
-        )
-        merged_data_pdf = generate_recency_label(
-            merged_data_pdf, "user_id", "user", self.num_quantiles
-        )
+        full_data_pdf = self.add_context_features(merged_data_pdf)
 
-        return merged_data_pdf[self._return_columns]
+        return full_data_pdf[self._return_columns]
 
 
 class UserDataPreprocessor:

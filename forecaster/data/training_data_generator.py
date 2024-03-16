@@ -12,8 +12,7 @@ class ModelDataset(Dataset):
     >>> from forecaster.data.training_data_generator import ModelDataset
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
     >>> full_data_pdf = processor.process()
-    >>> field_dims = processor.field_dims
-    >>> dataset = ModelDataset(full_data_pdf, field_dims)
+    >>> dataset = ModelDataset(full_data_pdf)
     >>> next(iter(dataset))
     (tensor([ 5154,     1,     4, 62813,    35,   551,     4,     7,     9,     5,
                  1,     3,     6,   559,     4,     0,     3,     0,     3,     1,
@@ -36,10 +35,10 @@ class ModelDataset(Dataset):
         "lon",
     )
 
-    def __init__(self, full_data_pdf: pd.DataFrame, field_dims: list[int]) -> None:
+    def __init__(self, full_data_pdf: pd.DataFrame) -> None:
         selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
+        self.field_dims = selected_features.nunique() + 1
         self.features = torch.tensor(selected_features.values)
-        self.field_dims = field_dims
         self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
 
     def __len__(self):
@@ -61,8 +60,7 @@ class TrainingDataGenerator:
     >>> from forecaster.data.training_data_generator import TrainingDataGenerator
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
     >>> full_data_pdf = processor.process()
-    >>> field_dims = processor.field_dims
-    >>> generator = TrainingDataGenerator(full_data_pdf, field_dims, batch_size=1)
+    >>> generator = TrainingDataGenerator(full_data_pdf, batch_size=1)
     >>> next(iter(generator.train_loader))
     [tensor([[7607,    0,    0, 1468,   20,  675,   17,    5,   12,    0,    0,    4,
                 10,   67,    2,    0,    1,    0,    0,    0,    0,    1,    1,    0,
@@ -73,7 +71,6 @@ class TrainingDataGenerator:
     def __init__(
         self,
         full_data_pdf: pd.DataFrame,
-        field_dims: list[int],
         split_month: tuple[int, int] = (1, 2),
         batch_size: int = 128,
         num_workers: int = 32,
@@ -85,7 +82,7 @@ class TrainingDataGenerator:
             self.valid_indices,
             self.test_indices,
         ) = self._split_indices(split_month)
-        self.dataset = ModelDataset(self.full_data_pdf, field_dims)
+        self.dataset = ModelDataset(self.full_data_pdf)
         self.batch_size = batch_size
         self.num_workers = num_workers
 

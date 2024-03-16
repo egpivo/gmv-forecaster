@@ -16,7 +16,6 @@ class Trainer:
     def __init__(
         self,
         processed_data: pd.DataFrame,
-        field_dims: list[int],
         embed_dim: int = 16,
         cross_layer_sizes: tuple[int, int] = (16, 16),
         mlp_dims: tuple[int, int] = (16, 16),
@@ -33,7 +32,7 @@ class Trainer:
     ) -> None:
 
         self.generator = TrainingDataGenerator(
-            processed_data, field_dims, batch_size=batch_size, num_workers=num_workers
+            processed_data, batch_size=batch_size, num_workers=num_workers
         )
         self.embed_dim = embed_dim
         self.cross_layer_sizes = cross_layer_sizes
