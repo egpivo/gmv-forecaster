@@ -137,11 +137,11 @@ class DataPreprocessor:
         added_temporal_features = transform_temporal_features(label_data_pdf)
         merged_data_pdf = pd.merge(
             pd.merge(
-                added_temporal_features, self.user_pdf, on=["user_id"], how="inner"
+                added_temporal_features, self.user_pdf, on=["user_id"], how="left"
             ),
             self.store_pdf,
             on=["store_id"],
-            how="inner",
+            how="left",
         )
         full_data_pdf = self.add_context_features(merged_data_pdf)
 

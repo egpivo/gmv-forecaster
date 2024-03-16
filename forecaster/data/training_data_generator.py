@@ -37,7 +37,7 @@ class ModelDataset(Dataset):
 
     def __init__(self, full_data_pdf: pd.DataFrame) -> None:
         selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
-        self.field_dims = selected_features.nunique() + 1
+        self.field_dims = selected_features.apply(max) + 1
         self.features = torch.tensor(selected_features.values)
         self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
 
