@@ -54,7 +54,7 @@ class ModelDataset(Dataset):
         return self.features[idx], self.labels[idx]
 
     def _create_mapping(self, column):
-        unique_values = column.unique()
+        unique_values = set(column)
         mapping = {value: index for index, value in enumerate(unique_values)}
         return mapping
 
