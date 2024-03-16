@@ -27,16 +27,20 @@ class ModelDataset(Dataset):
         ).copy()
         self.field_dims = selected_features.apply(max) + 1
         self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
-        self.store_id_mapping = self._create_mapping(train_data_pdf["store_id_label"])
-        self.user_id_mapping = self._create_mapping(train_data_pdf["user_id_label"])
+        self.store_id_mapping = self._create_mapping(
+            train_data_pdf["store_id_label"].tolist()
+        )
+        self.user_id_mapping = self._create_mapping(
+            train_data_pdf["user_id_label"].tolist()
+        )
 
         # store_id_label = 0 --> unseen stores
-        selected_features["store_id_label"] = self.store_id_mapping.get(
-            selected_features["store_id_label"], 0
+        selected_features["store_id_label"] = (
+            selected_features["store_id_label"].map(self.store_id_mapping).fillna(0)
         )
         # user_id_label = 0 --> unseen users
-        selected_features["user_id_label"] = self.store_id_mapping.get(
-            selected_features["user_id_label"], 0
+        selected_features["user_id_label"] = (
+            selected_features["user_id_label"].map(self.user_id_mapping).fillna(0)
         )
         self.features = torch.tensor(selected_features.values)
 
