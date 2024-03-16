@@ -4,23 +4,6 @@ from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 
 
 class ModelDataset(Dataset):
-    """
-    Examples
-    --------
-    >>> import torch
-    >>> from forecaster.data.data_proprocessor import DataPreprocessor
-    >>> from forecaster.data.training_data_generator import ModelDataset
-    >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
-    >>> full_data_pdf = processor.process()
-    >>> dataset = ModelDataset(full_data_pdf)
-    >>> next(iter(dataset))
-    (tensor([ 5154,     1,     4, 62813,    35,   551,     4,     5,     9,     5,
-                 1,     3,     6,   559,     4,     0,     3,     0,     3,     1,
-                 3,     0,     1,     2,     1,     0,     1,     0,     1,     1,
-                 0,     0]),
-     tensor(0))
-    """
-
     _removed_id = (
         "user_id",
         "store_id",
@@ -35,11 +18,25 @@ class ModelDataset(Dataset):
         "lon",
     )
 
-    def __init__(self, full_data_pdf: pd.DataFrame) -> None:
-        selected_features = full_data_pdf.drop([*self._removed_id, "label"], axis=1)
+    def __init__(
+        self, full_data_pdf: pd.DataFrame, train_indices: torch.tensor
+    ) -> None:
+        train_data_pdf = full_data_pdf.loc[train_indices]
+        selected_features = full_data_pdf.drop(
+            [*self._removed_id, "label"], axis=1
+        ).copy()
         self.field_dims = selected_features.apply(max) + 1
-        self.features = torch.tensor(selected_features.values)
         self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
+        self.store_id_mapping = self._create_mapping(train_data_pdf["store_id_label"])
+        self.user_id_mapping = self._create_mapping(train_data_pdf["user_id_label"])
+
+        selected_features["store_id_label"] = self.store_id_mapping.get(
+            selected_features["store_id_label"], 0
+        )
+        selected_features["user_id_label"] = self.store_id_mapping.get(
+            selected_features["user_id_label"], 0
+        )
+        self.features = torch.tensor(selected_features.values)
 
     def __len__(self):
         # The total length is the sum of all samples
@@ -49,6 +46,11 @@ class ModelDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.item()
         return self.features[idx], self.labels[idx]
+
+    def _create_mapping(self, column):
+        unique_values = column.unique()
+        mapping = {value: index for index, value in enumerate(unique_values)}
+        return mapping
 
 
 class TrainingDataGenerator:
