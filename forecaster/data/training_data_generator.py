@@ -87,7 +87,7 @@ class TrainingDataGenerator:
             self.valid_indices,
             self.test_indices,
         ) = self._split_indices(split_month)
-        self.dataset = ModelDataset(self.full_data_pdf, train_indices)
+        self.dataset = ModelDataset(self.full_data_pdf, self.train_indices)
         self.batch_size = batch_size
         self.num_workers = num_workers
 
