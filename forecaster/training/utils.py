@@ -30,9 +30,8 @@ def train_model(
     """
     model.train()
     total_loss = 0
-    for i, (input_data, target) in enumerate(
-        tqdm(data_loader, smoothing=0, mininterval=1.0)
-    ):
+    progressor = tqdm(data_loader, smoothing=0, mininterval=1.0)
+    for i, (input_data, target) in enumerate(progressor):
         input_data, target = input_data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(input_data)
@@ -41,9 +40,7 @@ def train_model(
         optimizer.step()
         total_loss += loss.item()
         if (i + 1) % log_interval == 0:
-            print(
-                f"Batch [{i + 1}/{len(data_loader)}], Loss: {total_loss / log_interval:.4f}"
-            )
+            progressor.set_postfix(loss=total_loss / log_interval)
             total_loss = 0
 
 
