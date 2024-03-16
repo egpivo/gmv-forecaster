@@ -14,11 +14,11 @@ class ModelDataset(Dataset):
     >>> full_data_pdf = processor.process()
     >>> dataset = ModelDataset(full_data_pdf)
     >>> next(iter(dataset))
-    [tensor([[ 9334,     0,     2, 41086,    43,  1486,     8,     7,     9,     2,
-                  0,     3,     7,   177,     4,     1,     4,     2,     4,     3,
-                  4,     3,     1,     1,     1,     3,     1,     3,     1,     4,
-                  0,     0]]),
-     tensor([1])]
+    (tensor([ 5154,     1,     4, 62813,    35,   551,     4,     5,     9,     5,
+                 1,     3,     6,   559,     4,     0,     3,     0,     3,     1,
+                 3,     0,     1,     2,     1,     0,     1,     0,     1,     1,
+                 0,     0]),
+     tensor(0))
     """
 
     _removed_id = (

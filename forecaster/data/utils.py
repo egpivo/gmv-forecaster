@@ -91,7 +91,7 @@ def generate_gmv_label_by_periods(df, group_column, preffix, num_quantiles):
 
     Examples:
     ---------
-    >>> transaction_pdf_with_revenue = calculate_gmv_label_by_periods(transaction_pdf, 'store_id', 'store', num_quantiles)
+    >>> transaction_pdf_with_revenue = generate_gmv_label_by_periods(transaction_pdf, 'store_id', 'store', num_quantiles)
     """
 
     # Convert 'event_occurrence' to datetime

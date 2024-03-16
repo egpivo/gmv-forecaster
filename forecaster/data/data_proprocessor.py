@@ -118,7 +118,7 @@ class DataPreprocessor:
         # Return transaction age label
         df = calculate_transaction_age_label(df, self.num_quantiles)
         # The number of quantile set 3 for store
-        df = generate_gmv_label_by_periods(df, "store_id", "store", 3)
+        df = generate_gmv_label_by_periods(df, "store_id", "store", 2)
         df = generate_gmv_label_by_periods(df, "user_id", "user", self.num_quantiles)
         df = generate_purchase_label_by_periods(
             df, "store_id", "store", self.num_quantiles
