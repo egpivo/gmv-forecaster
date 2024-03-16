@@ -30,9 +30,11 @@ class ModelDataset(Dataset):
         self.store_id_mapping = self._create_mapping(train_data_pdf["store_id_label"])
         self.user_id_mapping = self._create_mapping(train_data_pdf["user_id_label"])
 
+        # store_id_label = 0 --> unseen stores
         selected_features["store_id_label"] = self.store_id_mapping.get(
             selected_features["store_id_label"], 0
         )
+        # user_id_label = 0 --> unseen users
         selected_features["user_id_label"] = self.store_id_mapping.get(
             selected_features["user_id_label"], 0
         )
@@ -85,7 +87,7 @@ class TrainingDataGenerator:
             self.valid_indices,
             self.test_indices,
         ) = self._split_indices(split_month)
-        self.dataset = ModelDataset(self.full_data_pdf)
+        self.dataset = ModelDataset(self.full_data_pdf, train_indices)
         self.batch_size = batch_size
         self.num_workers = num_workers
 
