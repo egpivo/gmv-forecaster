@@ -103,12 +103,12 @@ class DataPreprocessor:
         transaction_data_path: str,
         store_data_path: str,
         num_negative_samples: int = 5,
-        start_date: str = None,
-        end_date: str = None,
+        start_month: pd.Timestamp = None,
+        end_month: pd.Timestamp = None,
     ) -> None:
         self.user_pdf = UserDataPreprocessor(user_data_path).process()
         self.transaction_pdf = TransactionDataPreprocessor(
-            transaction_data_path, start_date, end_date
+            transaction_data_path, start_month, end_month
         ).process()
         self.store_pdf = StoreDataPreprocessor(store_data_path).process()
         self.num_negative_samples = num_negative_samples
@@ -234,22 +234,22 @@ class TransactionDataPreprocessor:
     def __init__(
         self,
         data_path: str,
-        start_date: str = None,
-        end_date: str = None,
+        start_month: pd.Timestamp = None,
+        end_month: pd.Timestamp = None,
     ) -> None:
         self.transaction_pdf = DataHandler.fetch_transaction_data(data_path)
-        self.start_date = start_date
-        self.end_date = end_date
+        self.start_month = start_month
+        self.end_month = end_month
 
     def process(self) -> pd.DataFrame:
         # Filter data in a range
-        if self.start_date:
+        if self.start_month:
             self.transaction_pdf = self.transaction_pdf[
-                pd.to_datetime(self.start_date) <= self.transaction_pdf.event_occurrence
+                self.start_month <= self.transaction_pdf.event_occurrence
             ]
-        if self.end_date:
+        if self.end_month:
             self.transaction_pdf = self.transaction_pdf[
-                self.transaction_pdf.event_occurrence < pd.to_datetime(self.end_date)
+                self.transaction_pdf.event_occurrence < self.end_month
             ]
         null_transaction_pdf_row = pd.DataFrame(
             {key: [None] for key in self.transaction_pdf.columns}

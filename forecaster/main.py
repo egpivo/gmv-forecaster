@@ -2,10 +2,8 @@ from argparse import ArgumentParser
 
 import torch
 
-from forecaster.data.data_proprocessor import DataPreprocessor
-from forecaster.inference.utils import test_model
 from forecaster.logger.logging import setup_logger
-from forecaster.training.trainer import Trainer
+from forecaster.training.RollingWindowTrainer import RollingWindowTrainer
 
 LOGGER = setup_logger()
 
@@ -32,18 +30,18 @@ def fetch_args() -> "argparse.Namespace":
         help="Store data path",
     )
     arg_parser.add_argument(
-        "--start_date",
+        "--start_month",
         type=str,
-        default=None,
-        dest="start_date",
-        help="Start date for training with format `yyyymmdd`",
+        default="202101",
+        dest="start_month",
+        help="Start date for training with format `yyyymm`",
     )
     arg_parser.add_argument(
-        "--end_date",
+        "--end_month",
         type=str,
-        default=None,
-        dest="end_date",
-        help="Start date for training with format `yyyymmdd`",
+        default="202112",
+        dest="end_month",
+        help="Start date for training with format `yyyymm`",
     )
     arg_parser.add_argument(
         "--learning_rate",
@@ -112,15 +110,12 @@ def fetch_args() -> "argparse.Namespace":
 
 
 def run_job(args: "argparse.Namespace", device: torch.device) -> None:
-    processor = DataPreprocessor(
+    trainer = RollingWindowTrainer(
+        start_month=args.start_month,
+        end_month=args.end_month,
         user_data_path=args.user_data_path,
         transaction_data_path=args.transaction_data_path,
         store_data_path=args.store_data_path,
-        start_date=args.start_date,
-        end_date=args.end_date,
-    )
-    trainer = Trainer(
-        processed_data=processor.process(),
         embed_dim=args.embed_dim,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
@@ -134,9 +129,6 @@ def run_job(args: "argparse.Namespace", device: torch.device) -> None:
         logger=LOGGER,
     )
     trainer.train()
-
-    recall_at_k = test_model(trainer.model, trainer.test_loader, device)
-    LOGGER.info(f"Test Recall: {recall_at_k}")
 
 
 if __name__ == "__main__":
