@@ -1,3 +1,5 @@
+from typing import Union
+
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
@@ -65,7 +67,8 @@ class TrainingDataGenerator:
     >>> from forecaster.data.training_data_generator import TrainingDataGenerator
     >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
     >>> full_data_pdf = processor.process()
-    >>> generator = TrainingDataGenerator(full_data_pdf, batch_size=1)
+    >>> test_month = pd.to_datetime(str("202101"), format="%Y%m")
+    >>> generator = TrainingDataGenerator(full_data_pdf, test_month, batch_size=1)
     >>> next(iter(generator.train_loader))
     [tensor([[ 9334,     0,     2, 41086,    43,  1486,     8,     7,     9,     2,
                   0,     3,     7,   177,     4,     1,     4,     2,     4,     3,
@@ -77,12 +80,16 @@ class TrainingDataGenerator:
     def __init__(
         self,
         full_data_pdf: pd.DataFrame,
-        test_month: pd.Timestamp,
+        test_month: Union[pd.Timestamp, str],
         batch_size: int = 128,
         num_workers: int = 32,
     ) -> None:
         self.full_data_pdf = full_data_pdf
-        self.test_month = test_month
+        self.test_month = (
+            pd.to_datetime(test_month, format="%Y%m")
+            if isinstance(test_month, str)
+            else test_month
+        )
         self.batch_size = batch_size
         self.num_workers = num_workers
 
@@ -96,6 +103,7 @@ class TrainingDataGenerator:
 
     def _split_indices(self) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
         test_threshold = self.test_month
+        test_upper_bound = self.test_month + pd.DateOffset(months=1)
         validation_threshold = test_threshold - pd.DateOffset(months=1)
         train_lower_bound = validation_threshold - pd.DateOffset(years=1)
 
@@ -117,6 +125,7 @@ class TrainingDataGenerator:
         test_indices = torch.tensor(
             self.full_data_pdf[
                 (self.full_data_pdf["event_occurrence"] >= test_threshold)
+                & (self.full_data_pdf["event_occurrence"] < test_upper_bound)
             ].index,
             dtype=torch.int64,
         )

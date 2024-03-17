@@ -11,5 +11,4 @@ run: install
 	python forecaster/main.py \
 		--user_data_path "data/users.csv" \
 		--transaction_data_path "data/transactions.csv" \
-		--store_data_path "data/stores.csv" \
-		--end_date "2021-12-01"
+		--store_data_path "data/stores.csv"

@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import torch
 
 from forecaster.logger.logging import setup_logger
-from forecaster.training.RollingWindowTrainer import RollingWindowTrainer
+from forecaster.training.rolling_window_trainer import RollingWindowTrainer
 
 LOGGER = setup_logger()
 
@@ -32,7 +32,7 @@ def fetch_args() -> "argparse.Namespace":
     arg_parser.add_argument(
         "--start_month",
         type=str,
-        default="202101",
+        default="202102",
         dest="start_month",
         help="Start date for training with format `yyyymm`",
     )
@@ -52,7 +52,7 @@ def fetch_args() -> "argparse.Namespace":
     )
     arg_parser.add_argument(
         "--embed_dim",
-        default=128,
+        default=64,
         type=int,
         dest="embed_dim",
         help="Embedding dim",
@@ -96,7 +96,7 @@ def fetch_args() -> "argparse.Namespace":
         "--epoch",
         type=int,
         dest="epoch",
-        default=5,
+        default=3,
         help="Number of epochs",
     )
     arg_parser.add_argument(
