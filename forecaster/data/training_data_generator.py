@@ -58,8 +58,8 @@ class ModelDataset(Dataset):
 
 class TrainingDataGenerator:
     """Produce train/valid/test data loaders
-    Examples
-    --------
+        Examples
+        --------
     >>> import torch
     >>> from forecaster.data.data_proprocessor import DataPreprocessor
     >>> from forecaster.data.training_data_generator import TrainingDataGenerator
@@ -67,11 +67,11 @@ class TrainingDataGenerator:
     >>> full_data_pdf = processor.process()
     >>> generator = TrainingDataGenerator(full_data_pdf, batch_size=1)
     >>> next(iter(generator.train_loader))
-    [tensor([[ 9334,     0,     2, 41086,    43,  1486,     8,     7,     9,     2,
-                  0,     3,     7,   177,     4,     1,     4,     2,     4,     3,
-                  4,     3,     1,     1,     1,     3,     1,     3,     1,     4,
-                  0,     0]]),
-     tensor([1])]
+        [tensor([[ 9334,     0,     2, 41086,    43,  1486,     8,     7,     9,     2,
+                      0,     3,     7,   177,     4,     1,     4,     2,     4,     3,
+                      4,     3,     1,     1,     1,     3,     1,     3,     1,     4,
+                      0,     0]]),
+         tensor([1])]
     """
 
     def __init__(

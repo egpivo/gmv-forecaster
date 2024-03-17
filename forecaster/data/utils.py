@@ -55,7 +55,9 @@ def create_quantile_labels(dataframe, column, num_quantiles):
 
 def create_bin_labels(df, column, bins):
     """Create column labels based on bins for a DataFrame starting with 0"""
-    return pd.cut(df[column], bins=bins, labels=False)
+    labels = pd.cut(df[column], bins=bins, labels=False)
+    max_label = labels.max()
+    return labels.fillna(max_label + 1)
 
 
 def create_spatial_labels_kmeans(dataframe, num_clusters):
