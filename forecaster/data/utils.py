@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
+from forecaster.data import GMV_BINS, PURCHASE_BINS, RECENCY_BINS, TRANSACTIONS_AGE_BINS
+
 
 def generate_negative_samples(data, num_negative_samples=5, random_state=42):
     np.random.seed(random_state)
@@ -51,6 +53,11 @@ def create_quantile_labels(dataframe, column, num_quantiles):
     return pd.qcut(dataframe[column], num_quantiles, labels=False, duplicates="drop")
 
 
+def create_bin_labels(df, column, bins):
+    """Create column labels based on bins for a DataFrame starting with 0"""
+    return pd.cut(df[column], bins=bins, labels=False)
+
+
 def create_spatial_labels_kmeans(dataframe, num_clusters):
     """
     Apply K-means clustering to latitude and longitude coordinates and add cluster labels to a DataFrame.
@@ -69,7 +76,7 @@ def create_spatial_labels_kmeans(dataframe, num_clusters):
     return kmeans.fit_predict(coordinates)
 
 
-def generate_gmv_label_by_periods(df, group_column, preffix, num_quantiles):
+def generate_gmv_label_by_periods(df, group_column, prefix):
     """
     Calculate GMV label by periods for each group (e.g., store or user).
 
@@ -81,8 +88,6 @@ def generate_gmv_label_by_periods(df, group_column, preffix, num_quantiles):
         The name of the column representing the group (e.g., 'store_id' or 'user_id').
     amount_column : str
         The name of the column representing the transaction amount (e.g., 'revenue' or 'contribution').
-    num_quantiles : int
-        The number of quantiles to use for discretizing the GMV.
 
     Returns:
     --------
@@ -91,7 +96,7 @@ def generate_gmv_label_by_periods(df, group_column, preffix, num_quantiles):
 
     Examples:
     ---------
-    >>> transaction_pdf_with_revenue = generate_gmv_label_by_periods(transaction_pdf, 'store_id', 'store', num_quantiles)
+    >>> transaction_pdf_with_revenue = generate_gmv_label_by_periods(transaction_pdf, 'store_id', 'store')
     """
 
     # Convert 'event_occurrence' to datetime
@@ -102,10 +107,10 @@ def generate_gmv_label_by_periods(df, group_column, preffix, num_quantiles):
 
     # Define periods and their corresponding start dates
     periods = {
-        f"last_month_{preffix}_gmv": 1,
-        f"last_quarter_{preffix}_gmv": 3,
-        f"last_half_year_{preffix}_gmv": 6,
-        f"last_year_{preffix}_gmv": 12,
+        f"last_month_{prefix}_gmv": 1,
+        f"last_quarter_{prefix}_gmv": 3,
+        f"last_half_year_{prefix}_gmv": 6,
+        f"last_year_{prefix}_gmv": 12,
     }
     start_dates = {
         period: last_date - pd.offsets.DateOffset(months=months)
@@ -121,12 +126,12 @@ def generate_gmv_label_by_periods(df, group_column, preffix, num_quantiles):
 
     # Create quantile labels for each period's amount
     for period in periods:
-        df[f"{period}_label"] = create_quantile_labels(df, period, num_quantiles)
+        df[f"{period}_label"] = create_bin_labels(df, period, GMV_BINS[prefix][period])
 
     return df
 
 
-def generate_purchase_label_by_periods(df, group_column, preffix, num_quantiles):
+def generate_purchase_label_by_periods(df, group_column, prefix):
     """
     Calculate purchase frequency label by periods for each group (e.g., store or user).
 
@@ -136,10 +141,8 @@ def generate_purchase_label_by_periods(df, group_column, preffix, num_quantiles)
         The DataFrame containing transaction data.
     group_column : str
         The name of the column representing the group (e.g., 'store_id' or 'user_id').
-    preffix : str
+    prefix : str
         The prefix to add to the column names.
-    num_quantiles : int
-        The number of quantiles to use for discretizing the frequency.
 
     Returns:
     --------
@@ -148,7 +151,7 @@ def generate_purchase_label_by_periods(df, group_column, preffix, num_quantiles)
 
     Examples:
     ---------
-    >>> transaction_pdf_with_frequency = generate_frequency_label_by_periods(transaction_pdf, 'store_id', 'store', num_quantiles)
+    >>> transaction_pdf_with_frequency = generate_purchase_label_by_periods(transaction_pdf, 'store_id', 'store', num_quantiles)
     """
 
     # Convert 'event_occurrence' to datetime
@@ -159,10 +162,10 @@ def generate_purchase_label_by_periods(df, group_column, preffix, num_quantiles)
 
     # Define periods and their corresponding start dates
     periods = {
-        f"last_month_{preffix}_purchase": 1,
-        f"last_quarter_{preffix}_purchase": 3,
-        f"last_half_year_{preffix}_purchase": 6,
-        f"last_year_{preffix}_purchase": 12,
+        f"last_month_{prefix}_purchase": 1,
+        f"last_quarter_{prefix}_purchase": 3,
+        f"last_half_year_{prefix}_purchase": 6,
+        f"last_year_{prefix}_purchase": 12,
     }
     start_dates = {
         period: last_date - pd.offsets.DateOffset(months=months)
@@ -180,8 +183,9 @@ def generate_purchase_label_by_periods(df, group_column, preffix, num_quantiles)
 
     # Create quantile labels for each period's frequency
     for period in periods:
-        df[f"{period}_label"] = create_quantile_labels(df, period, num_quantiles)
-
+        df[f"{period}_label"] = create_bin_labels(
+            df, period, PURCHASE_BINS[prefix][period]
+        )
     return df
 
 
@@ -194,8 +198,6 @@ def generate_recency_label(df, group_column, prefix):
         group_column (str): The name of the column representing the group (e.g., 'user_id' or 'store_id').
         prefix : str
             The prefix to add to the column names.
-        num_quantiles : int
-            The number of quantiles to use for discretizing the frequency.
 
     Returns:
         pandas DataFrame: DataFrame with recency calculated for each group.
@@ -216,18 +218,20 @@ def generate_recency_label(df, group_column, prefix):
     df[column_name] = (
         df[group_column].map(recency_data).fillna((last_date - earliest_date).days)
     )
-    df[f"{column_name}_label"] = 1 * (df[column_name] > 0)
+    df[f"{column_name}_label"] = create_bin_labels(
+        df, column_name, RECENCY_BINS[prefix]
+    )
     return df
 
 
-def calculate_transaction_age_label(df, num_quantiles):
+def calculate_transaction_age_label(df):
     # Find the last transaction date
     last_transaction_date = df["event_occurrence"].max()
 
     # Calculate transaction age for each transaction
     df["transaction_age"] = (last_transaction_date - df["event_occurrence"]).dt.days
-    df["transaction_age_label"] = create_quantile_labels(
-        df, "transaction_age", num_quantiles
+    df["transaction_age_label"] = create_bin_labels(
+        df, "transaction_age", TRANSACTIONS_AGE_BINS
     )
     return df
 
