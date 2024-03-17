@@ -16,6 +16,7 @@ class Trainer:
     def __init__(
         self,
         processed_data: pd.DataFrame,
+        field_dims: pd.Series,
         test_month: pd.Timestamp,
         embed_dim: int = 16,
         cross_layer_sizes: tuple[int, int] = (32, 16),
@@ -31,7 +32,7 @@ class Trainer:
         model_name: str = "xdfm",
         logger: Optional[logging.Logger] = None,
     ) -> None:
-
+        self.field_dims = field_dims
         self.generator = TrainingDataGenerator(
             processed_data,
             test_month=test_month,
@@ -67,7 +68,7 @@ class Trainer:
             return torch.load(self.model_path)
         else:
             return ExtremeDeepFactorizationMachineModel(
-                field_dims=self.generator.dataset.field_dims,
+                field_dims=self.field_dims,
                 embed_dim=self.embed_dim,
                 cross_layer_sizes=self.cross_layer_sizes,
                 mlp_dims=self.mlp_dims,

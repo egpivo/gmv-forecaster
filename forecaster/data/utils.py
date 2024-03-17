@@ -260,3 +260,40 @@ def transform_temporal_features(pdf: pd.DataFrame) -> pd.DataFrame:
     pdf["season"] = (pdf["event_occurrence"].dt.month % 12 + 3) // 3
     pdf["month"] = pdf["event_occurrence"].dt.month
     return pdf
+
+
+def preprocess_inference_data(
+    processor,
+    full_pdf,
+    removed_id=(
+        "user_id",
+        "store_id",
+        "gender",
+        "age",
+        "nam",
+        "laa",
+        "category",
+        "amount",
+        "event_occurrence",
+        "lat",
+        "lon",
+    ),
+):
+    feature_pdf = full_pdf.drop([*removed_id, "label"], axis=1)
+    field_dims = feature_pdf.apply(max) + 1
+    cumulative_field_dims = np.cumsum(field_dims)
+
+    user_label_pdf = processor.user_pdf[["user_id_label", "gender_label", "age_label"]]
+    user_label_pdf.loc[:, "gender_label"] += cumulative_field_dims[0]
+    user_label_pdf.loc[:, "age_label"] += cumulative_field_dims[1]
+
+    store_label_pdf = processor.store_pdf[
+        ["store_id_label", "nam_label", "laa_label", "category_label", "spatial_label"]
+    ]
+    store_label_pdf.loc[:, "store_id_label"] += cumulative_field_dims[2]
+    store_label_pdf.loc[:, "nam_label"] += cumulative_field_dims[3]
+    store_label_pdf.loc[:, "laa_label"] += cumulative_field_dims[4]
+    store_label_pdf.loc[:, "category_label"] += cumulative_field_dims[5]
+    store_label_pdf.loc[:, "spatial_label"] += cumulative_field_dims[6]
+
+    return user_label_pdf, store_label_pdf

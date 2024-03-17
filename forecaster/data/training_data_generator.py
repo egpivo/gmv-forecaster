@@ -27,7 +27,6 @@ class ModelDataset(Dataset):
         selected_features = full_data_pdf.drop(
             [*self._removed_id, "label"], axis=1
         ).copy()
-        self.field_dims = selected_features.apply(max) + 1
         self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
 
         # store_id_label = 0 --> unseen stores

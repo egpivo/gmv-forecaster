@@ -1,9 +1,12 @@
+import pandas as pd
 import torch
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchmetrics.functional.classification import binary_auroc
 from tqdm import tqdm
+
+from forecaster.data.data_proprocessor import DataPreprocessor
 
 
 def train_model(
@@ -69,3 +72,16 @@ def validate_model(
             all_predictions = torch.cat((all_predictions, output))
     auroc = binary_auroc(all_predictions, all_targets)
     return auroc.item()
+
+
+def calculate_field_dims(
+    user_data_path: str,
+    transaction_data_path: str,
+    store_data_path: str,
+) -> pd.Series:
+    processor = DataPreprocessor(user_data_path, transaction_data_path, store_data_path)
+    pdf = processor.process()[
+        [*processor._user_fields, *processor._store_fields, *processor._context_fields]
+    ]
+
+    return pdf.apply(max) + 1
