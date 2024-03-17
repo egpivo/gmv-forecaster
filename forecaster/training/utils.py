@@ -84,4 +84,4 @@ def calculate_field_dims(
         [*processor._user_fields, *processor._store_fields, *processor._context_fields]
     ]
 
-    return pdf.apply(max) + 1
+    return pdf.apply(max) + 2

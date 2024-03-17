@@ -32,7 +32,7 @@ def fetch_args() -> "argparse.Namespace":
     arg_parser.add_argument(
         "--start_month",
         type=str,
-        default="202102",
+        default="202101",
         dest="start_month",
         help="Start date for training with format `yyyymm`",
     )
@@ -52,7 +52,7 @@ def fetch_args() -> "argparse.Namespace":
     )
     arg_parser.add_argument(
         "--embed_dim",
-        default=64,
+        default=128,
         type=int,
         dest="embed_dim",
         help="Embedding dim",
