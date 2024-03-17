@@ -80,8 +80,8 @@ def calculate_field_dims(
     store_data_path: str,
 ) -> pd.Series:
     processor = DataPreprocessor(user_data_path, transaction_data_path, store_data_path)
-    pdf = processor.process()[
+    feature_pdf = processor.process()[
         [*processor._user_fields, *processor._store_fields, *processor._context_fields]
     ]
 
-    return pdf.apply(max) + 2
+    return feature_pdf.apply(max) + 2, feature_pdf

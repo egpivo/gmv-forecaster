@@ -48,7 +48,7 @@ class RollingWindowTrainer:
         self.logger = logger
 
     def train(self):
-        field_dims = calculate_field_dims(
+        field_dims, _ = calculate_field_dims(
             self.user_data_path, self.transaction_data_path, self.store_data_path
         )
         for month in range(int(self.start_month), int(self.end_month) + 1):

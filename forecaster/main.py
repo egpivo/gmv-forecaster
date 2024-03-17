@@ -52,7 +52,7 @@ def fetch_args() -> "argparse.Namespace":
     )
     arg_parser.add_argument(
         "--embed_dim",
-        default=128,
+        default=64,
         type=int,
         dest="embed_dim",
         help="Embedding dim",

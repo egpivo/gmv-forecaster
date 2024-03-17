@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader
 from torchmetrics.functional.retrieval import retrieval_recall
 from tqdm import tqdm
 
+from forecaster.training.utils import calculate_field_dims
+
 
 def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> float:
     """
@@ -98,3 +100,25 @@ def calculate_estimated_gmv(top_stores_with_scores, avg_store_amount, scale):
                 estimated_gmv_per_user[user_id] += scale * store_prob * avg_amount
 
     return estimated_gmv_per_user
+
+
+def preprocess_inference_data(user_csv_path, transactions_csv_path, stores_csv_path):
+    field_dims, feature_pdf = calculate_field_dims(
+        user_csv_path, transactions_csv_path, stores_csv_path
+    )
+    cumulative_field_dims = np.cumsum(field_dims)
+
+    user_label_pdf = feature_pdf[["user_id_label", "gender_label", "age_label"]]
+    user_label_pdf.loc[:, "gender_label"] += cumulative_field_dims[0]
+    user_label_pdf.loc[:, "age_label"] += cumulative_field_dims[1]
+
+    store_label_pdf = feature_pdf[
+        ["store_id_label", "nam_label", "laa_label", "category_label", "spatial_label"]
+    ]
+    store_label_pdf.loc[:, "store_id_label"] += cumulative_field_dims[2]
+    store_label_pdf.loc[:, "nam_label"] += cumulative_field_dims[3]
+    store_label_pdf.loc[:, "laa_label"] += cumulative_field_dims[4]
+    store_label_pdf.loc[:, "category_label"] += cumulative_field_dims[5]
+    store_label_pdf.loc[:, "spatial_label"] += cumulative_field_dims[6]
+
+    return user_label_pdf, store_label_pdf

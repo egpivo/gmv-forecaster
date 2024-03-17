@@ -1,12 +1,12 @@
 import torch
 
 from forecaster.data.data_proprocessor import DataPreprocessor
-from forecaster.data.utils import preprocess_inference_data
 from forecaster.inference.utils import (
     calculate_embeddings,
     calculate_estimated_gmv,
     create_faiss_index,
     estimate_gmv_per_user,
+    preprocess_inference_data,
 )
 
 
@@ -46,7 +46,7 @@ class UserGmvForecaster:
         )
         self.full_pdf = self.processor.process()
         self.user_label_pdf, self.store_label_pdf = preprocess_inference_data(
-            self.processor, self.full_pdf
+            user_csv_path, transactions_csv_path, stores_csv_path
         )
         self.scale = scale
 
