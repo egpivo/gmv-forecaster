@@ -49,29 +49,17 @@ class CompressedInteractionNetwork(torch.nn.Module):
 
 class FeaturesEmbedding(torch.nn.Module):
     def __init__(self, field_dims, embed_dim):
-        """
-        Initialize the FeaturesEmbedding module.
-
-        :param field_dims: List containing the number of unique categories for each field.
-        :param embed_dim: Dimensionality of the embedding vectors.
-        """
         super().__init__()
         self.embedding = torch.nn.Embedding(sum(field_dims), embed_dim)
         self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
-        # Initialize embedding weights
         torch.nn.init.xavier_uniform_(self.embedding.weight.data)
 
     def forward(self, x):
         """
-        Forward pass of the FeaturesEmbedding module.
-
-        :param x: Long tensor of size ``(batch_size, num_fields)`` containing field indices.
-        :return: Embedding tensor of size ``(batch_size, num_fields, embed_dim)``.
+        :param x: Long tensor of size ``(batch_size, num_fields)``
         """
-        # Ensure input tensor has the correct data type
-        x = x.long()
-        # Add offsets to convert field indices to embedding indices
         x = x + x.new_tensor(self.offsets).unsqueeze(0)
+        x = x.long()
         return self.embedding(x)
 
 
@@ -86,8 +74,8 @@ class FeaturesLinear(torch.nn.Module):
         """
         :param x: Long tensor of size ``(batch_size, num_fields)``
         """
-        x = x.long()
         x = x + x.new_tensor(self.offsets).unsqueeze(0)
+        x = x.long()
         return torch.sum(self.fc(x), dim=1) + self.bias
 
 
