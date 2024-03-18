@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 
-from forecaster.data.data_proprocessor import CONTEXT_FIELDS, STORE_FIELDS, USER_FIELDS
+from forecaster.data.data_preprocessor import CONTEXT_FIELDS, STORE_FIELDS, USER_FIELDS
 
 
 class ModelDataset(Dataset):

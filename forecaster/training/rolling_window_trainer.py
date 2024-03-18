@@ -4,7 +4,7 @@ from typing import Optional
 import pandas as pd
 import torch
 
-from forecaster.data.data_proprocessor import DataPreprocessor
+from forecaster.data.data_preprocessor import DataPreprocessor
 from forecaster.inference.utils import test_model
 from forecaster.training.trainer import Trainer
 from forecaster.training.utils import calculate_field_dims

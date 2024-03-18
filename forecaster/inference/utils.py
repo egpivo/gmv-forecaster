@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torchmetrics.functional.retrieval import retrieval_recall
 from tqdm import tqdm
 
-from forecaster.data.data_proprocessor import DataPreprocessor
+from forecaster.data.data_preprocessor import CONTEXT_FIELDS, DataPreprocessor
 from forecaster.training.utils import calculate_field_dims
 
 
@@ -239,13 +239,12 @@ def get_context_features(
     Tuple[pd.DataFrame, pd.DataFrame]
         Tuple containing DataFrames for user and store context features.
     """
-    processor = DataPreprocessor(
+    full_data_pdf = DataPreprocessor(
         users_csv_path,
         transactions_csv_path,
         stores_csv_path,
         is_negative_sampling=False,
-    )
-    full_data_pdf = processor.process()
+    ).process()
     full_data_pdf["event_occurrence"] = pd.to_datetime(
         full_data_pdf["event_occurrence"]
     )
@@ -255,7 +254,7 @@ def get_context_features(
         full_data_pdf["event_occurrence"] < upper_date
     )
     context_features_pdf = full_data_pdf[condition][
-        ["user_id_label", "store_id_label", *processor._context_fields[5:]]
+        ["user_id_label", "store_id_label", *CONTEXT_FIELDS[5:]]
     ]
     user_features = [
         column for column in context_features_pdf.columns if "user" in column

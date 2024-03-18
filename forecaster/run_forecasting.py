@@ -1,12 +1,13 @@
 import argparse
 import os
 import warnings
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import pandas as pd
 
 from forecaster.data import UNSEEN_USER_ID
-from forecaster.data.data_proprocessor import UserDataPreprocessor
+from forecaster.data.data_preprocessor import UserDataPreprocessor
 from forecaster.inference.forecaster import UserGmvForecaster
 from forecaster.logger.logging import setup_logger
 
@@ -95,7 +96,7 @@ def run_job(args: argparse.Namespace) -> None:
         start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)
     ]
 
-    result = {}
+    result = defaultdict(dict)
     for predicted_date in [date.strftime("%Y%m%d") for date in date_range]:
         LOGGER.info(f"Forecast user GMV on {predicted_date}")
         result[predicted_date] = forecaster.forecast(predicted_date)
@@ -116,11 +117,18 @@ def run_job(args: argparse.Namespace) -> None:
         df_merged[df_merged["user_id"] != UNSEEN_USER_ID]
         .groupby("user_id")["gmv"]
         .sum()
+        .reset_index()
     )
+    user_gmv_path = os.path.join(
+        "results", f"{args.user_result_name}_{args.start_date}_{args.end_date}.csv"
+    )
+    total_user_gmv_pdf.to_csv(user_gmv_path, index=False)
 
-    daily_gmv_pdf = df_merged.groupby("date")["gmv"].sum()
-    total_user_gmv_pdf.to_csv(f"results/{args.user_result_name}.csv", index=False)
-    daily_gmv_pdf.to_csv(f"results/{args.daily_result_name}.csv", index=False)
+    daily_gmv_pdf = df_merged.groupby("date")["gmv"].sum().reset_index()
+    daily_gmv_path = os.path.join(
+        "results", f"{args.daily_result_name}_{args.start_date}_{args.end_date}.csv"
+    )
+    daily_gmv_pdf.to_csv(daily_gmv_path, index=False)
 
 
 if __name__ == "__main__":

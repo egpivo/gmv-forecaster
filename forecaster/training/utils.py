@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchmetrics.functional.classification import binary_auroc
 from tqdm import tqdm
 
-from forecaster.data.data_proprocessor import (
+from forecaster.data.data_preprocessor import (
     CONTEXT_FIELDS,
     STORE_FIELDS,
     USER_FIELDS,
