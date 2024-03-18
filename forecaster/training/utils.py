@@ -4,7 +4,6 @@ import pandas as pd
 import torch
 from torch.nn import Module
 from torch.utils.data import DataLoader
-from torchmetrics.functional.classification import binary_auroc
 from tqdm import tqdm
 
 from forecaster.data.data_preprocessor import (
@@ -59,40 +58,6 @@ def train_model(
         if (i + 1) % log_interval == 0:
             progressor.set_postfix(loss=total_loss / log_interval)
             total_loss = 0
-
-
-def validate_model(
-    model: Module, data_loader: DataLoader, device: torch.device
-) -> float:
-    """
-    Evaluate the model using the provided data loader and return AUROC score.
-
-    Parameters
-    ----------
-    model : Module
-        The trained model to be evaluated.
-    data_loader : DataLoader
-        DataLoader containing the evaluation dataset.
-    device : torch.device
-        Device to run the evaluation on (e.g., 'cpu', 'cuda').
-
-    Returns
-    -------
-    float
-        AUROC score.
-    """
-    model.eval()
-    all_targets = torch.tensor([]).to(device, dtype=torch.long)
-    all_predictions = torch.tensor([]).to(device)
-    with torch.no_grad():
-        progressor = tqdm(data_loader, desc="Validation", smoothing=0, mininterval=1.0)
-        for input_data, target in progressor:
-            input_data, target = input_data.to(device), target.to(device)
-            output = model(input_data)
-            all_targets = torch.cat((all_targets, target))
-            all_predictions = torch.cat((all_predictions, output))
-    auroc = binary_auroc(all_predictions, all_targets)
-    return auroc.item()
 
 
 def calculate_field_dims(

@@ -9,14 +9,14 @@ train: install
 	@eval "$$(conda shell.bash hook)" && \
 	conda activate forecaster && \
 	python forecaster/run_training.py \
-		--user_data_path "data/users.csv" \
-		--transaction_data_path "data/transactions.csv" \
+		--user_data_path "data/sources/users.csv" \
+		--transaction_data_path "data/sources/transactions.csv" \
 		--store_data_path "data/stores.csv"
 
 forecast: install
 	@eval "$$(conda shell.bash hook)" && \
 	conda activate forecaster && \
 	python forecaster/run_forecasting.py \
-		--user_data_path "data/users.csv" \
-		--transaction_data_path "data/transactions.csv" \
-		--store_data_path "data/stores.csv"
+		--user_data_path "data/sources/users.csv" \
+		--transaction_data_path "data/sources/transactions.csv" \
+		--store_data_path "data/sources/stores.csv"

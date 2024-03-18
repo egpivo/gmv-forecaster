@@ -30,6 +30,7 @@ The forecasting of GMV is approached through two steps:
 
 2. **Estimating GMV**: Leveraging the estimated probability and the average store's GMV, the next GMV of either a user or a day is forecasted.
 
+- Details can be referred to [solution design](notebooks/solution_design_introduction.ipynb).
 ### Training Model: Extreme DeepFM (xDeepFM)
 
 Extreme DeepFM (xDeepFM) is a powerful neural network architecture designed for tasks such as click-through rate prediction and recommendation systems. It extends the traditional DeepFM model by incorporating a Compressed Interaction Network (CIN) layer, which allows for capturing higher-order feature interactions more effectively.
@@ -50,7 +51,7 @@ Extreme DeepFM (xDeepFM) is a powerful neural network architecture designed for 
 
 #### Architecture Overview:
 
-![xDeepFM Architecture](assets/xDeepFM.png)
+![xDeepFM Architecture](data/assets/xDeepFM.png)
 
 ### Advantages of xDeepFM:
 
@@ -72,10 +73,18 @@ By leveraging the capabilities of Extreme DeepFM, our forecasting model can effe
 •  Enhanced Features: Apply the rolling window method to calculate features akin to Recency, Frequency, and Monetary (RFM) metrics, like moving averages, providing deeper insights into the data trends.
 
 Please note that the figure mentioned for the rolling window strategy is not displayed here, but it should be included in the final documentation where this strategy is presented.
+### Training Validation
+Here's a snapshot from one of the training months. Typically, the AUC hovers around 0.84, but there's potential for improvement with appropriate hyperparameter tuning.
 
+![Training Validation](data/assets/training-process-snapshot.png)
 
+## Forecast Result
+You can find the visualization in the notebook located at [notebooks/forecast_analysis.ipynb](notebooks/forecast_analysis.ipynb). We may opt to simplify the evaluation process for this challenge. However, corresponding evaluation functions can be implemented in `forecaster/evaluation/`.
 
-## Result Reproducible
+## Engineering
+### High-Level Flow
+![Forecaster Architecture](data/assets/high-level-flow.png)
+### Result Reproducible
 
 To reproduce the results, follow these steps:
 
@@ -84,3 +93,4 @@ To reproduce the results, follow these steps:
 2. **Environment Setup**: Run `make install` to set up the necessary environment.
 
 3. **Training**: Execute `make train` to train the forecasting model.
+4. **Inference**: Execute `make inference` to forecast the GMV.

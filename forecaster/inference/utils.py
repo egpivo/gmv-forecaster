@@ -1,4 +1,3 @@
-import logging
 from collections import defaultdict
 from typing import Tuple
 
@@ -6,76 +5,9 @@ import faiss
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader
-from torchmetrics.functional.retrieval import retrieval_recall
-from tqdm import tqdm
 
 from forecaster.data.data_preprocessor import CONTEXT_FIELDS, DataPreprocessor
 from forecaster.training.utils import calculate_field_dims
-
-
-def setup_logger() -> logging.Logger:
-    """
-    Setup logging configuration.
-
-    Returns
-    -------
-    logging.Logger: Configured logger object.
-    """
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    # Create a console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-
-    # Create a formatter and set it to the handler
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    console_handler.setFormatter(formatter)
-
-    # Add the handler to the logger
-    logger.addHandler(console_handler)
-
-    return logger
-
-
-def test_model(
-    model: torch.nn.Module, data_loader: DataLoader, device: str, top_k: int = 10
-) -> float:
-    """
-    Evaluate the model using the provided data loader.
-
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The trained model to be evaluated.
-    data_loader : DataLoader
-        DataLoader containing the evaluation dataset.
-    device : str
-        Device to run the evaluation on (e.g., 'cpu', 'cuda').
-    top_k : int, optional
-        Number of top predictions to consider for recall calculation, by default 10.
-
-    Returns
-    -------
-    float
-        recall@k score.
-    """
-    model.eval()
-    targets = torch.tensor([]).to(device=device, dtype=torch.long)
-    predicts = torch.tensor([]).to(device=device)
-
-    with torch.no_grad():
-        for input_data, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
-            input_data, target = input_data.to(device), target.to(device)
-            predict = model(input_data)
-            targets = torch.cat((targets, target))
-            predicts = torch.cat((predicts, predict))
-
-    recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
-    return recall_at_k.item()
 
 
 def calculate_embeddings(

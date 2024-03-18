@@ -1,3 +1,5 @@
+from typing import Union
+
 import pandas as pd
 
 from forecaster.data import AGE_BINS, UNSEEN_STORE_ID, UNSEEN_USER_ID
@@ -62,8 +64,8 @@ class DataPreprocessor:
 
     Examples
     --------
-    >>> from forecaster.data.data_proprocessor import DataPreprocessor
-    >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
+    >>> from forecaster.data.data_preprocessor import DataPreprocessor
+    >>> processor = DataPreprocessor("data/sources/users.csv", "data/sources/transactions.csv", "data/sources/stores.csv")
     >>> pdf = processor.process()
     >>> pdf.shape
     (9493566, 44)
@@ -99,8 +101,8 @@ class DataPreprocessor:
         transaction_data_path: str,
         store_data_path: str,
         num_negative_samples: int = 5,
-        start_month: pd.Timestamp = None,
-        end_month: pd.Timestamp = None,
+        start_month: Union[pd.Timestamp, str] = None,
+        end_month: Union[pd.Timestamp, str] = None,
         is_negative_sampling: bool = True,
     ) -> None:
         self.user_pdf = UserDataPreprocessor(user_data_path).process()
@@ -237,12 +239,20 @@ class TransactionDataPreprocessor:
     def __init__(
         self,
         data_path: str,
-        start_month: pd.Timestamp = None,
-        end_month: pd.Timestamp = None,
+        start_month: Union[pd.Timestamp, str] = None,
+        end_month: Union[pd.Timestamp, str] = None,
     ) -> None:
         self.transaction_pdf = DataHandler.fetch_transaction_data(data_path)
-        self.start_month = start_month
-        self.end_month = end_month
+        self.start_month = (
+            pd.to_datetime(start_month, format="%Y%m")
+            if isinstance(start_month, str)
+            else start_month
+        )
+        self.end_month = (
+            pd.to_datetime(end_month, format="%Y%m")
+            if isinstance(end_month, str)
+            else end_month
+        )
 
     def process(self) -> pd.DataFrame:
         # Filter data in a range

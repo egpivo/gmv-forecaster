@@ -6,9 +6,10 @@ import pandas as pd
 import torch
 
 from forecaster.data.training_data_generator import TrainingDataGenerator
+from forecaster.evaluation.utils import validate_model
 from forecaster.training.early_stopper import EarlyStopper
 from forecaster.training.model.xdfm import ExtremeDeepFactorizationMachineModel
-from forecaster.training.utils import train_model, validate_model
+from forecaster.training.utils import train_model
 
 
 class Trainer:
