@@ -1,6 +1,6 @@
 import pandas as pd
 
-from forecaster.data import AGE_BINS
+from forecaster.data import AGE_BINS, UNSEEN_STORE_ID, UNSEEN_USER_ID
 from forecaster.data.data_handler import DataHandler
 from forecaster.data.utils import (
     calculate_transaction_age_label,
@@ -13,9 +13,6 @@ from forecaster.data.utils import (
     label_encode,
     transform_temporal_features,
 )
-
-UNSEEN_USER_ID = "-1"
-UNSEEN_STORE_ID = "-1"
 
 
 class DataPreprocessor:
