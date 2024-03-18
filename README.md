@@ -1,94 +1,148 @@
 # GMV Forecasting
+## Table of Contents
 
+1. [Exploratory Data Analysis](#exploratory-data-analysis)
+   - [Findings](#findings)
+   - [Feature Engineering](#feature-engineering)
+
+2. [Methodology](#methodology)
+   - [Training Model: Extreme DeepFM (xDeepFM)](#training-model-extreme-deepfm-xdeepfm)
+      - [Key Components](#key-components)
+      - [Training Process](#training-process)
+      - [Architecture Overview](#architecture-overview)
+   - [Advantages of xDeepFM](#advantages-of-xdeepfm)
+   - [Training Strategy: Rolling Window](#training-strategy-rolling-window)
+   - [Training Validation](#training-validation)
+
+3. [Forecast Results](#forecast-results)
+   - [User GMV and Daily GMV CSV Files](#user-gmv-and-daily-gmv-csv-files)
+   - [Visualization Notebook](#visualization-notebook)
+
+4. [Engineering](#engineering)
+   - [High-Level Flow](#high-level-flow)
+   - [Result Reproducible](#result-reproducible)
+   -
 ## Exploratory Data Analysis
+### Findings:
 
-### Summary:
+1. **User Behavior Variability**: There is a noticeable fluctuation in user behaviors when observed over various time frames, such as hourly or monthly.
 
-1. **User Behavior Variability**: User behaviors exhibit variations across different time scales (e.g., hourly or monthly).
+2. **Store Activity**: Recent transaction records from around 60,000 stores suggest active commerce. Notably, the store with the highest frequency of visits appears 11 times, indicating its popularity.
 
-2. **Store Activity**: Approximately 60,000 stores have recorded transactions recently, indicating ongoing business activity. The most frequently visited store has been recorded 11 times, suggesting popularity among users.
+3. **Spatial Relationship Analysis**: K-means clustering has been applied to categorize spatial locations, effectively preserving their inherent spatial relationships.
 
-3. **Spatial Relationship Analysis**: Utilizing K-means clustering, spatial locations are grouped to capture the original spatial relationship.
+4. **Context Feature Exploration**: The RMF (Recency, Frequency, Monetary) analysis method has been utilized to pinpoint key context features that are significant.
 
-4. **Context Feature Exploration**: RMF analysis is employed to identify significant context features.
-
-For detailed insights, refer to the [exploratory data analysis notebook](notebooks/exploratory_data_analysis.ipynb).
+For a comprehensive examination, please consult the exploratory data analysis notebook provided in the documentation - [exploratory data analysis notebook](notebooks/exploratory_data_analysis.ipynb).
 
 ### Feature Engineering:
 
-- **Missing Value Imputation**: Median imputation for numeric features and mode imputation for categorical features.
+- **Missing Value Imputation**: Apply median imputation to fill missing values in numeric features, and mode imputation for categorical features to maintain data integrity.
 
-- **Context Feature Creation**: New context features are generated based on the findings from the exploratory data analysis notebook.
+- **Context Feature Creation**: Develop new context features derived from insights gathered during exploratory data analysis, enhancing model input.
 
-- **Binarization of Continuous Features**: Continuous features are binarized based on their summary statistics to simplify training of the xDeepFM model.
+- **Binarization of Continuous Features**: Convert continuous features into binary form using summary statistics thresholds to streamline the xDeepFM model training process.
 
 ## Methodology
 
 The forecasting of GMV is approached through two steps:
 
-1. **Predicting Purchase Probability**: A Click-Through Rate (CTR) model is utilized to forecast the probability of a user making a purchase at a store for the next step.
+1. **Predicting Purchase Probability**: Utilize a Click-Through Rate (CTR) model to predict the likelihood of a user completing a purchase at a given store in the subsequent period.
 
-2. **Estimating GMV**: Leveraging the estimated probability and the average store's GMV, the next GMV of either a user or a day is forecasted.
+2. **Estimating GMV**: Use the predicted purchase probability in conjunction with the store's average GMV to forecast the forthcoming GMV for a user or a specific day.
 
-- Details can be referred to [solution design](notebooks/solution_design_introduction.ipynb).
+For an in-depth understanding, please refer to the solution design documentation - [solution design](notebooks/solution_design_introduction.ipynb).
 ### Training Model: Extreme DeepFM (xDeepFM)
-
-Extreme DeepFM (xDeepFM) is a powerful neural network architecture designed for tasks such as click-through rate prediction and recommendation systems. It extends the traditional DeepFM model by incorporating a Compressed Interaction Network (CIN) layer, which allows for capturing higher-order feature interactions more effectively.
+The Extreme DeepFM (xDeepFM) model is an advanced neural network designed for click-through rate prediction and recommendation systems. It enhances the standard DeepFM framework by integrating a Compressed Interaction Network (CIN) layer, enabling the model to capture complex feature interactions at a higher order with greater efficacy.
 
 #### Key Components:
 
-- **Embedding Layer**: Converts categorical features into dense representations, facilitating meaningful feature interactions.
+- **Embedding Layer**: Transforms categorical features into dense vectors, enabling nuanced feature interactions.
 
-- **Deep Component**: Consists of multiple fully connected layers, enabling the model to learn complex patterns from the data.
+- **Deep Component**: Comprises several fully connected layers that learn intricate data patterns.
 
-- **Compressed Interaction Network (CIN)**: Captures feature interactions through a series of cross-network layers. Unlike traditional interaction methods, CIN utilizes a more efficient approach to compute feature interactions, making it suitable for large-scale datasets.
+- **Compressed Interaction Network (CIN)**: Efficiently computes feature interactions across layers, ideal for handling large datasets.
 
 #### Training Process:
 
-- **Positive and Negative Sampling**: The model is trained using both positive labels (actual transaction records) and negative labels (generated through random sampling). This approach helps the model learn to distinguish between positive and negative instances.
+- **Sampling**:  Trains on both positive (real transactions) and negative (randomly sampled) labels to differentiate between outcomes.
 
-- **Loss Function**: Cross-entropy loss is commonly used as the loss function for binary classification tasks. It measures the dissimilarity between the predicted probability distribution and the actual labels.
+- **Loss Function**: Employs binary cross-entropy loss to quantify the difference between predicted probabilities and actual labels.
 
 #### Architecture Overview:
+The architecture diagram of xDeepFM illustrates the intricate design of the model, showcasing the embedding layers, deep network components, and the innovative CIN layer for advanced feature interaction learning.
 
 ![xDeepFM Architecture](data/assets/xDeepFM.png)
 
 ### Advantages of xDeepFM:
 
-- **Enhanced Feature Interactions**: The CIN layer allows the model to capture intricate relationships between features, leading to more accurate predictions.
+- **Complex Feature Learning**: The CIN layer in xDeepFM intricately learns feature interactions, enhancing prediction accuracy.
+- **Large-Scale Data Handling**: Its efficient computation makes xDeepFM ideal for processing extensive datasets.
+- **Versatile Application:**: The model's flexible design adapts to various domains, including recommendation systems and digital marketing.
 
-- **Scalability**: xDeepFM is well-suited for large-scale datasets due to its efficient computation of feature interactions.
-
-- **Flexibility**: The architecture can be adapted to various tasks in recommendation systems, advertising, and beyond.
-
-By leveraging the capabilities of Extreme DeepFM, our forecasting model can effectively capture the complex dynamics of user-store interactions, thereby improving the accuracy of GMV predictions.
+The xDeepFM model's sophisticated capabilities enable it to grasp the nuanced dynamics between users and stores, refining GMV forecast precision.
 
 ### Training Strategy: Rolling Window
-•  Temporal Pattern Capture: Implement a rolling window strategy to effectively capture temporal patterns and address time autocorrelation.
+- **Temporal Dynamics**: A rolling window strategy captures time-dependent patterns, addressing autocorrelation concerns.
+- **Dynamic Adaptation**: Regular updates to the training data ensure the model stays attuned to evolving data trends.
+- **Informed Predictions**: Historical data within each window informs the model, bolstering prediction reliability.
+- **Feature Enrichment**: Rolling windows compute RFM-like metrics, offering additional data insights.
 
-•  Adaptability: Update the training dataset iteratively to maintain model relevance as the data distribution evolves over time.
+For visual representation, please include the rolling window figure in the final documentation as referenced.
+![xDeepFM Architecture](data/assets/rolling-window.png)
 
-•  Robust Predictions: Use historical data within each fixed-size window to inform the model, enhancing the accuracy and robustness of predictions.
-
-•  Enhanced Features: Apply the rolling window method to calculate features akin to Recency, Frequency, and Monetary (RFM) metrics, like moving averages, providing deeper insights into the data trends.
-
-Please note that the figure mentioned for the rolling window strategy is not displayed here, but it should be included in the final documentation where this strategy is presented.
 ### Training Validation
-Here's a snapshot from one of the training months. Typically, the AUC hovers around 0.84, but there's potential for improvement with appropriate hyperparameter tuning.
+During a typical training month, the AUC score averages around 0.84. There is room for enhancement through careful hyperparameter optimization.
 
 ![Training Validation](data/assets/training-process-snapshot.png)
 
-## Forecast Result
-You can find the visualization in the notebook located at [notebooks/forecast_analysis.ipynb](notebooks/forecast_analysis.ipynb). We may opt to simplify the evaluation process for this challenge. However, corresponding evaluation functions can be implemented in `forecaster/evaluation/`.
+## Forecast Results
+- The forecasted GMV results are accessible as follows:
+    - User GMV: Available in the file `results/user_gmv_20220101_20220131.csv`.
+    - Daily GMV: Located in `results/daily_gmv_20220101_20220131.csv`.
+
+Visualizations and further analysis can be found in the (notebook)[notebooks/forecast_analysis.ipynb]. For this challenge, we might streamline the evaluation process. Nonetheless, specific evaluation functions are ready for implementation under `forecaster/evaluation/`.
+
 
 ## Engineering
 ### High-Level Flow
+The architecture of the forecaster is depicted in the provided diagram, illustrating the system's workflow and component interaction.
 ![Forecaster Architecture](data/assets/high-level-flow.png)
 ### Result Reproducible
 
-To reproduce the results, follow these steps:
+To replicate the forecasting results, adhere to the following procedure:
 
-1. **Prerequisite**: Ensure [Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/) is installed.
-2. **Environment Setup**: Run `make install` to set up the necessary environment.
-3. **Training**: Execute `make train` to train the forecasting model.
-4. **Forecast**: Execute `make forecast` to forecast the GMV.
+1. **Prerequisite**: Confirm the installation of [Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/) is installed.
+2. **Environment Setup**: Use the command for environment preparation.
+    ```bash
+    make install
+    ```
+3. **Model Training**: Initiate rolling-window model training with
+   - Default
+       ```bash
+       make train
+       ```
+   - Custom data path:
+        ```bash
+        source activate forecaster
+        python forecaster/run_training.py \
+          --user_data_path "{user_data_path}" \
+          --transaction_data_path "{transaction_data_path}" \
+          --store_data_path "{transaction_data_path}"
+        ```
+
+4. **GMV Forecasting**: Generate GMV forecasts by running
+   - Default:
+       ```bash
+       make forecast
+       ```
+   - Custom data path and predicted date range:
+       ```bash
+        source activate forecaster
+        python forecaster/run_training.py \
+          --user_data_path "{user_data_path}" \
+          --transaction_data_path "{transaction_data_path}" \
+          --store_data_path "{transaction_data_path}" \
+          --start_date "{yyyymmdd}" \
+          --end_date "{yyyymmdd}"
+       ```
