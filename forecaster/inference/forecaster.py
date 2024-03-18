@@ -46,7 +46,7 @@ class UserGmvForecaster:
         users_csv_path: str,
         transactions_csv_path: str,
         stores_csv_path: str,
-        top_k: int = 1,
+        top_k: int = 2,
     ) -> None:
         """
         Initialize the UserGmvForecaster.
@@ -62,8 +62,10 @@ class UserGmvForecaster:
         stores_csv_path : str
             Path to the CSV file containing store data.
         top_k : int, optional
-            Number of top stores to consider for each user, by default 1 based on EDA
+            Number of top stores to consider for each user, by default 2 based on EDA
         """
+        assert top_k > 1, f"Please enter a larger top-k number, but got {top_k}"
+
         self.processor = DataPreprocessor(
             users_csv_path, transactions_csv_path, stores_csv_path
         )

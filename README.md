@@ -71,6 +71,13 @@ The Extreme DeepFM (xDeepFM) model is an advanced neural network designed for cl
 
 - **Loss Function**: Employs binary cross-entropy loss to quantify the difference between predicted probabilities and actual labels.
 
+- **Training Data Generation**:
+  - Implement a strategy to redefine unseen users/stores during model validation and testing to prevent data leakage.
+  - Utilize a leave-one experiment approach for creating train/validation/test datasets, e.g.,
+    - Test: Current month
+    - Valid: One month earlier than the test month
+    - Train: One month earlier than the validation month
+
 #### Architecture Overview:
 The architecture diagram of xDeepFM illustrates the intricate design of the model, showcasing the embedding layers, deep network components, and the innovative CIN layer for advanced feature interaction learning.
 
@@ -112,7 +119,9 @@ During a typical training month, the AUC score averages around 0.84. There is ro
     - User GMV: Available in the file `results/user_gmv_20220101_20220131.csv`.
     - Daily GMV (YayYay): Located in `results/daily_gmv_20220101_20220131.csv`.
 
-- Visualizations and further analysis can be found in the (notebook)[notebooks/forecast_analysis.ipynb].
+- Time-series comparison
+![Prediction](data/assets/daily-gmv-prediction.png)
+  - Visualizations and further analysis can be found in the (notebook)[notebooks/forecast_analysis.ipynb]. F
 - While the evaluation process may be simplified for this challenge, the necessary evaluation functions are prepared for integration within `forecaster/evaluation/`.
 - It is recommended to assess the mean-squared errors of the GMV forecasts to gain a deeper understanding of the model's performance.
 
