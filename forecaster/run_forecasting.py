@@ -48,7 +48,7 @@ def fetch_args() -> argparse.Namespace:
     arg_parser.add_argument(
         "--end_date",
         type=str,
-        default="20220131",
+        default="20220102",
         dest="end_date",
         help="End date for forecasting with format `yyyymmdd`",
     )

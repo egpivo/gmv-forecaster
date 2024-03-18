@@ -1,4 +1,6 @@
 # GMV Forecasting
+Our initiative is centered on forecasting Gross Merchandise Volume (GMV) through sophisticated machine learning models. Crafted to navigate the complexities of real-world data scenarios, including cold starts, sparse signals, and voluminous datasets, our forecasting system is equipped with a suite of solutions engineered to methodically overcome these challenges.
+
 ## Table of Contents
 
 1. [Exploratory Data Analysis](#exploratory-data-analysis)
@@ -14,9 +16,9 @@
    - [Training Strategy: Rolling Window](#training-strategy-rolling-window)
    - [Training Validation](#training-validation)
 
-3. [Forecast Results](#forecast-results)
-   - [User GMV and Daily GMV CSV Files](#user-gmv-and-daily-gmv-csv-files)
-   - [Visualization Notebook](#visualization-notebook)
+3. [Forecast](#forecast)
+   - [Workflow](#workflow)
+   - [Results](#results)
 
 4. [Engineering](#engineering)
    - [High-Level Flow](#high-level-flow)
@@ -96,13 +98,23 @@ During a typical training month, the AUC score averages around 0.84. There is ro
 
 ![Training Validation](data/assets/training-process-snapshot.png)
 
-## Forecast Results
+## Forecast
+### Workflow
+1. The process from the `start_date` to the `end_date` involves the following steps:
+   1. **Embedding Utilization**: Leverage user and store embeddings, adjusted for various dates, in conjunction with context embeddings from the trained model.
+   2. **Top-1 Store Prediction by FAISS**: Use FAISS to pinpoint the store where a user is most likely to transact, informed by EDA insights.
+   3. **GMV Estimation**: Calculate the expected daily user GMV using the established formula.
+
+2. Afterward, synthesize the findings to present a dual perspective: individual user behavior and daily aggregate trends.
+
+### Results
 - The forecasted GMV results are accessible as follows:
     - User GMV: Available in the file `results/user_gmv_20220101_20220131.csv`.
     - Daily GMV (YayYay): Located in `results/daily_gmv_20220101_20220131.csv`.
 
-Visualizations and further analysis can be found in the (notebook)[notebooks/forecast_analysis.ipynb]. For this challenge, we might streamline the evaluation process. Nonetheless, specific evaluation functions are ready for implementation under `forecaster/evaluation/`.
-
+- Visualizations and further analysis can be found in the (notebook)[notebooks/forecast_analysis.ipynb].
+- While the evaluation process may be simplified for this challenge, the necessary evaluation functions are prepared for integration within `forecaster/evaluation/`.
+- It is recommended to assess the mean-squared errors of the GMV forecasts to gain a deeper understanding of the model's performance.
 
 ## Engineering
 ### High-Level Flow
