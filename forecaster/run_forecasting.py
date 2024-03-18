@@ -1,6 +1,6 @@
+import argparse
 import os
 import warnings
-from argparse import ArgumentParser
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -16,8 +16,8 @@ warnings.filterwarnings("ignore")
 LOGGER = setup_logger()
 
 
-def fetch_args() -> "argparse.Namespace":
-    arg_parser = ArgumentParser()
+def fetch_args() -> argparse.Namespace:
+    arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument(
         "--user_data_path",
@@ -65,10 +65,24 @@ def fetch_args() -> "argparse.Namespace":
         default="xdfm",
         help="Model name",
     )
+    arg_parser.add_argument(
+        "--user_result_name",
+        type=str,
+        dest="user_result_name",
+        default="user_gmv",
+        help="User GMV forecasting result",
+    )
+    arg_parser.add_argument(
+        "--daily_result_name",
+        type=str,
+        dest="daily_result_name",
+        default="daily_gmv",
+        help="PayPay daily GMV forecasting result",
+    )
     return arg_parser.parse_args()
 
 
-def run_job(args: "argparse.Namespace") -> None:
+def run_job(args: argparse.Namespace) -> None:
     forecaster = UserGmvForecaster(
         model_path=os.path.join(args.save_dir, f"{args.model_name}.pt"),
         users_csv_path=args.user_data_path,
@@ -105,8 +119,8 @@ def run_job(args: "argparse.Namespace") -> None:
     )
 
     daily_gmv_pdf = df_merged.groupby("date")["gmv"].sum()
-    total_user_gmv_pdf.to_csv("results/user_gmv.csv", index=False)
-    daily_gmv_pdf.to_csv("results/daily_gmv.csv", index=False)
+    total_user_gmv_pdf.to_csv(f"results/{args.user_result_name}.csv", index=False)
+    daily_gmv_pdf.to_csv(f"results/{args.daily_result_name}.csv", index=False)
 
 
 if __name__ == "__main__":

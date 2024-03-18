@@ -4,51 +4,36 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 
+from forecaster.data.data_proprocessor import CONTEXT_FIELDS, STORE_FIELDS, USER_FIELDS
+
 
 class ModelDataset(Dataset):
-    _removed_id = (
-        "user_id",
-        "store_id",
-        "gender",
-        "age",
-        "nam",
-        "laa",
-        "category",
-        "amount",
-        "event_occurrence",
-        "lat",
-        "lon",
-    )
-
     def __init__(
         self, full_data_pdf: pd.DataFrame, train_indices: torch.tensor
     ) -> None:
         train_data_pdf = full_data_pdf.loc[train_indices]
-        selected_features = full_data_pdf.drop(
-            [*self._removed_id, "label"], axis=1
-        ).copy()
+        selected_features = full_data_pdf[
+            [*USER_FIELDS, *STORE_FIELDS, *CONTEXT_FIELDS]
+        ].copy()
         self.labels = torch.tensor(full_data_pdf["label"].values, dtype=torch.long)
 
-        # store_id_label = 0 --> unseen stores
+        # Set unseen stores' label to 0
+        unseen_stores = set(train_data_pdf["store_id_label"])
         selected_features.loc[
-            ~selected_features["store_id_label"].isin(
-                set(train_data_pdf["store_id_label"])
-            ),
+            ~selected_features["store_id_label"].isin(unseen_stores),
             "store_id_label",
         ] = 0
 
-        # user_id_label = 0 --> unseen users
+        # Set unseen users' label to 0
+        unseen_users = set(train_data_pdf["user_id_label"])
         selected_features.loc[
-            ~selected_features["user_id_label"].isin(
-                set(train_data_pdf["user_id_label"])
-            ),
+            ~selected_features["user_id_label"].isin(unseen_users),
             "user_id_label",
         ] = 0
 
         self.features = torch.tensor(selected_features.values)
 
     def __len__(self):
-        # The total length is the sum of all samples
         return len(self.features)
 
     def __getitem__(self, idx):
@@ -58,23 +43,7 @@ class ModelDataset(Dataset):
 
 
 class TrainingDataGenerator:
-    """Produce train/valid/test data loaders
-    Examples
-    --------
-    >>> import torch
-    >>> from forecaster.data.data_proprocessor import DataPreprocessor
-    >>> from forecaster.data.training_data_generator import TrainingDataGenerator
-    >>> processor = DataPreprocessor("data/users.csv", "data/transactions.csv", "data/stores.csv")
-    >>> full_data_pdf = processor.process()
-    >>> test_month = pd.to_datetime(str("202101"), format="%Y%m")
-    >>> generator = TrainingDataGenerator(full_data_pdf, test_month, batch_size=1)
-    >>> next(iter(generator.train_loader))
-    [tensor([[ 9334,     0,     2, 41086,    43,  1486,     8,     7,     9,     2,
-                  0,     3,     7,   177,     4,     1,     4,     2,     4,     3,
-                  4,     3,     1,     1,     1,     3,     1,     3,     1,     4,
-                  0,     0]]),
-     tensor([1])]
-    """
+    """Produce train/valid/test data loaders"""
 
     def __init__(
         self,

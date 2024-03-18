@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+import argparse
 
 import torch
 
@@ -8,108 +8,58 @@ from forecaster.training.rolling_window_trainer import RollingWindowTrainer
 LOGGER = setup_logger()
 
 
-def fetch_args() -> "argparse.Namespace":
-    arg_parser = ArgumentParser()
-
+def fetch_args() -> argparse.Namespace:
+    """Fetch command-line arguments."""
+    arg_parser = argparse.ArgumentParser(description="Arguments for training model.")
+    arg_parser.add_argument("--user_data_path", type=str, help="Path to user data.")
     arg_parser.add_argument(
-        "--user_data_path",
-        type=str,
-        dest="user_data_path",
-        help="User data path",
+        "--transaction_data_path", type=str, help="Path to transaction data."
     )
-    arg_parser.add_argument(
-        "--transaction_data_path",
-        type=str,
-        dest="transaction_data_path",
-        help="Transaction data path",
-    )
-    arg_parser.add_argument(
-        "--store_data_path",
-        type=str,
-        dest="store_data_path",
-        help="Store data path",
-    )
+    arg_parser.add_argument("--store_data_path", type=str, help="Path to store data.")
     arg_parser.add_argument(
         "--start_month",
         type=str,
         default="202101",
-        dest="start_month",
-        help="Start date for training with format `yyyymm`",
+        help="Start date for training in 'yyyymm' format.",
     )
     arg_parser.add_argument(
         "--end_month",
         type=str,
         default="202112",
-        dest="end_month",
-        help="Start date for training with format `yyyymm`",
+        help="End date for training in 'yyyymm' format.",
     )
     arg_parser.add_argument(
-        "--learning_rate",
-        default=1e-3,
-        type=float,
-        dest="learning_rate",
-        help="Learning rate",
+        "--learning_rate", type=float, default=1e-3, help="Learning rate."
     )
     arg_parser.add_argument(
-        "--embed_dim",
-        default=64,
-        type=int,
-        dest="embed_dim",
-        help="Embedding dim",
+        "--embed_dim", type=int, default=64, help="Embedding dimension."
     )
+    arg_parser.add_argument("--batch_size", type=int, default=1024, help="Batch size.")
+    arg_parser.add_argument("--dropout", type=float, default=0.2, help="Dropout rate.")
     arg_parser.add_argument(
-        "--batch_size",
-        default=1024,
-        type=int,
-        dest="batch_size",
-        help="Batch size",
-    )
-    arg_parser.add_argument(
-        "--dropout",
-        default=0.2,
-        type=float,
-        dest="dropout",
-        help=f"Dropout",
-    )
-    arg_parser.add_argument(
-        "--weight_decay",
-        default=0.1,
-        type=float,
-        dest="weight_decay",
-        help=f"Weight decay",
+        "--weight_decay", type=float, default=0.1, help="Weight decay."
     )
     arg_parser.add_argument(
         "--save_dir",
         type=str,
-        dest="save_dir",
         default="checkpoint/",
-        help="Directory for model saving",
+        help="Directory for saving models.",
     )
     arg_parser.add_argument(
-        "--model_name",
-        type=str,
-        dest="model_name",
-        default="xdfm",
-        help="Model name",
+        "--model_name", type=str, default="xdfm", help="Model name."
     )
-    arg_parser.add_argument(
-        "--epoch",
-        type=int,
-        dest="epoch",
-        default=3,
-        help="Number of epochs",
-    )
+    arg_parser.add_argument("--epoch", type=int, default=3, help="Number of epochs.")
     arg_parser.add_argument(
         "--num_workers",
         type=int,
-        dest="num_workers",
         default=32,
-        help="Number of CPU cores for parallel computing",
+        help="Number of CPU cores for parallel computing.",
     )
     return arg_parser.parse_args()
 
 
-def run_job(args: "argparse.Namespace", device: torch.device) -> None:
+def run_job(args: argparse.Namespace, device: torch.device) -> None:
+    """Run the training job."""
     trainer = RollingWindowTrainer(
         start_month=args.start_month,
         end_month=args.end_month,
@@ -133,13 +83,6 @@ def run_job(args: "argparse.Namespace", device: torch.device) -> None:
 
 if __name__ == "__main__":
     args = fetch_args()
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        LOGGER.info(
-            "Using GPU:", torch.cuda.get_device_name(0)
-        )  # Print the GPU device name
-    else:
-        device = torch.device("cpu")
-        LOGGER.info("CUDA is not available. Using CPU instead.")
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    LOGGER.info(f"Using device: {device}")
     run_job(args, device)

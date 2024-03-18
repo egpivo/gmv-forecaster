@@ -14,13 +14,51 @@ from forecaster.data.utils import (
     transform_temporal_features,
 )
 
+USER_FIELDS = [
+    "user_id_label",
+    "gender_label",
+    "age_label",
+]
+STORE_FIELDS = [
+    "store_id_label",
+    "nam_label",
+    "laa_label",
+    "category_label",
+    "spatial_label",
+]
+CONTEXT_FIELDS = [
+    "hour",
+    "weekday",
+    "is_weekend",
+    "season",
+    "month",
+    "transaction_age",
+    "last_month_user_gmv_label",
+    "last_month_store_gmv_label",
+    "last_quarter_user_gmv_label",
+    "last_quarter_store_gmv_label",
+    "last_half_year_user_gmv_label",
+    "last_half_year_store_gmv_label",
+    "last_year_user_gmv_label",
+    "last_year_store_gmv_label",
+    "last_month_user_purchase_label",
+    "last_month_store_purchase_label",
+    "last_quarter_user_purchase_label",
+    "last_quarter_store_purchase_label",
+    "last_half_year_user_purchase_label",
+    "last_half_year_store_purchase_label",
+    "last_year_user_purchase_label",
+    "last_year_store_purchase_label",
+    "user_recency_label",
+    "store_recency_label",
+]
+
 
 class DataPreprocessor:
     """
     Notes
     -----
-    - This class will take over the main data wrangling logic and create a new features
-
+    - This class will take over the main data wrangling logic and create new features
 
     Examples
     --------
@@ -32,45 +70,6 @@ class DataPreprocessor:
     >>> pdf.isnull().sum().sum()
     0
     """
-
-    _user_fields = [
-        "user_id_label",
-        "gender_label",
-        "age_label",
-    ]
-    _store_fields = [
-        "store_id_label",
-        "nam_label",
-        "laa_label",
-        "category_label",
-        "spatial_label",
-    ]
-    _context_fields = [
-        "hour",
-        "weekday",
-        "is_weekend",
-        "season",
-        "month",
-        "transaction_age",
-        "last_month_user_gmv_label",
-        "last_month_store_gmv_label",
-        "last_quarter_user_gmv_label",
-        "last_quarter_store_gmv_label",
-        "last_half_year_user_gmv_label",
-        "last_half_year_store_gmv_label",
-        "last_year_user_gmv_label",
-        "last_year_store_gmv_label",
-        "last_month_user_purchase_label",
-        "last_month_store_purchase_label",
-        "last_quarter_user_purchase_label",
-        "last_quarter_store_purchase_label",
-        "last_half_year_user_purchase_label",
-        "last_half_year_store_purchase_label",
-        "last_year_user_purchase_label",
-        "last_year_store_purchase_label",
-        "user_recency_label",
-        "store_recency_label",
-    ]
 
     _return_columns = [
         "user_id",
@@ -85,11 +84,11 @@ class DataPreprocessor:
         "lat",
         "lon",
         # User Field
-        *_user_fields,
+        *USER_FIELDS,
         # Store Field
-        *_store_fields,
-        # Contex Field
-        *_context_fields,
+        *STORE_FIELDS,
+        # Context Field
+        *CONTEXT_FIELDS,
         # Target
         "label",
     ]
@@ -179,7 +178,7 @@ class UserDataPreprocessor:
         # Label encoding
         for column in ("user_id", "gender"):
             user_pdf[f"{column}_label"] = label_encode(user_pdf[column])
-        # Discretion
+        # Discretization
         user_pdf["age_label"] = create_bin_labels(user_pdf, "age", AGE_BINS)
         return user_pdf[self._return_columns]
 

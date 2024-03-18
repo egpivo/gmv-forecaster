@@ -1,6 +1,6 @@
 import torch
 
-from forecaster.data.data_proprocessor import DataPreprocessor
+from forecaster.data.data_preprocessor import DataPreprocessor
 from forecaster.inference.utils import (
     calculate_embeddings,
     calculate_estimated_gmv,
@@ -14,21 +14,30 @@ class UserGmvForecaster:
     """
     Forecast GMV for each user based on their top-5 stores and average store GMV.
 
-    Args:
-        model_path (str): Path to the trained XDFM model.
-        users_csv_path (str): Path to the CSV file containing user data.
-        transactions_csv_path (str): Path to the CSV file containing transaction data.
-        stores_csv_path (str): Path to the CSV file containing store data.
-        top_k (int, optional): Number of top stores to consider for each user. Defaults to 5.
+    Parameters
+    ----------
+    model_path : str
+        Path to the trained XDFM model.
+    users_csv_path : str
+        Path to the CSV file containing user data.
+    transactions_csv_path : str
+        Path to the CSV file containing transaction data.
+    stores_csv_path : str
+        Path to the CSV file containing store data.
+    top_k : int, optional
+        Number of top stores to consider for each user. Defaults to 5.
 
-    Returns:
-        dict: Estimated GMV for each user.
+    Returns
+    -------
+    dict
+        Estimated GMV for each user.
 
-    Notes:
-        - This method utilizes an Extreme Deep Factorization Machine (XDFM) model to calculate embeddings for users and stores.
-        - The top-5 stores for each user are determined based on their embeddings and a Faiss index.
-        - GMV is estimated by multiplying the probability of each store with its average transaction amount.
-        - The estimation can be scaled based on a specified factor (e.g., number of days).
+    Notes
+    -----
+    - This method utilizes an Extreme Deep Factorization Machine (XDFM) model to calculate embeddings for users and stores.
+    - The top-k stores for each user are determined based on their embeddings and a Faiss index.
+    - GMV is estimated by multiplying the probability of each store with its average transaction amount.
+    - The estimation can be scaled based on a specified factor (e.g., number of days).
     """
 
     def __init__(
@@ -38,21 +47,48 @@ class UserGmvForecaster:
         transactions_csv_path: str,
         stores_csv_path: str,
         top_k: int = 5,
-    ):
+    ) -> None:
+        """
+        Initialize the UserGmvForecaster.
+
+        Parameters
+        ----------
+        model_path : str
+            Path to the trained XDFM model.
+        users_csv_path : str
+            Path to the CSV file containing user data.
+        transactions_csv_path : str
+            Path to the CSV file containing transaction data.
+        stores_csv_path : str
+            Path to the CSV file containing store data.
+        top_k : int, optional
+            Number of top stores to consider for each user, by default 5.
+        """
         self.processor = DataPreprocessor(
             users_csv_path, transactions_csv_path, stores_csv_path
         )
         self.model = torch.load(model_path)
-
         self.users_csv_path = users_csv_path
         self.transactions_csv_path = transactions_csv_path
         self.stores_csv_path = stores_csv_path
-
         self.model.eval()
         self.top_k = top_k
         self.avg_store_amount = self._calculate_avg_store_amount()
 
     def forecast(self, predicted_date: str) -> dict:
+        """
+        Forecast GMV for each user based on their top-5 stores.
+
+        Parameters
+        ----------
+        predicted_date : str
+            The date for which to make the forecast (in format 'YYYYMMDD').
+
+        Returns
+        -------
+        dict
+            Estimated GMV for each user.
+        """
         user_label_pdf, store_label_pdf = preprocess_inference_data(
             self.users_csv_path,
             self.transactions_csv_path,
@@ -72,15 +108,13 @@ class UserGmvForecaster:
         return estimated_gmv_per_user
 
     def _calculate_avg_store_amount(self) -> dict:
+        """
+        Calculate the average transaction amount for each store.
+
+        Returns
+        -------
+        dict
+            Average transaction amount for each store.
+        """
         full_pdf = self.processor.process()
         return full_pdf.groupby("store_id_label")["amount"].mean().to_dict()
-
-
-if __name__ == "__main__":
-    forecaster = UserGmvForecaster(
-        "checkpoint/xdfm.pt",
-        "data/users.csv",
-        "data/transactions.csv",
-        "data/stores.csv",
-    )
-    estimated_gmv_per_user = forecaster.forecast()

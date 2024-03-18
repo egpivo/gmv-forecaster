@@ -10,10 +10,11 @@ from forecaster.training.model.layer import (
 
 class ExtremeDeepFactorizationMachineModel(torch.nn.Module):
     """
-    A pytorch implementation of xDeepFM.
+    Extreme Deep Factorization Machine Model for recommendation systems.
 
-    Reference:
-        J Lian, et al. xDeepFM: Combining Explicit and Implicit Feature Interactions for Recommender Systems, 2018.
+    References
+    ----------
+    - J Lian, et al. xDeepFM: Combining Explicit and Implicit Feature Interactions for Recommender Systems, 2018.
     """
 
     def __init__(
@@ -24,7 +25,25 @@ class ExtremeDeepFactorizationMachineModel(torch.nn.Module):
         dropout,
         cross_layer_sizes,
         split_half=True,
-    ):
+    ) -> None:
+        """
+        Initialize the Extreme Deep Factorization Machine Model.
+
+        Parameters
+        ----------
+        field_dims : list
+            The dimensions of the input fields.
+        embed_dim : int
+            The dimension of the embedding.
+        mlp_dims : tuple
+            The dimensions of the multi-layer perceptron.
+        dropout : float
+            The dropout probability.
+        cross_layer_sizes : tuple
+            The sizes of cross layers.
+        split_half : bool, optional
+            Whether to split half of the cross layers, by default True
+        """
         super().__init__()
         self.embedding = FeaturesEmbedding(field_dims, embed_dim)
         self.embed_output_dim = len(field_dims) * embed_dim
@@ -36,7 +55,17 @@ class ExtremeDeepFactorizationMachineModel(torch.nn.Module):
 
     def forward(self, x):
         """
-        :param x: Long tensor of size ``(batch_size, num_fields)``
+        Forward pass of the model.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor of size ``(batch_size, num_fields)``
+
+        Returns
+        -------
+        torch.Tensor
+            Output tensor after passing through the model.
         """
         embed_x = self.embedding(x)
         x = (

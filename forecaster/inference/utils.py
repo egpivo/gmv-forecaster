@@ -1,4 +1,6 @@
+import logging
 from collections import defaultdict
+from typing import Tuple
 
 import faiss
 import numpy as np
@@ -12,22 +14,58 @@ from forecaster.data.data_proprocessor import DataPreprocessor
 from forecaster.training.utils import calculate_field_dims
 
 
-def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> float:
+def setup_logger() -> logging.Logger:
+    """
+    Setup logging configuration.
+
+    Returns
+    -------
+    logging.Logger: Configured logger object.
+    """
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    # Create a console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Create a formatter and set it to the handler
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    console_handler.setFormatter(formatter)
+
+    # Add the handler to the logger
+    logger.addHandler(console_handler)
+
+    return logger
+
+
+def test_model(
+    model: torch.nn.Module, data_loader: DataLoader, device: str, top_k: int = 10
+) -> float:
     """
     Evaluate the model using the provided data loader.
 
-    Args:
-        model: The trained model to be evaluated.
-        data_loader (DataLoader): DataLoader containing the evaluation dataset.
-        device: Device to run the evaluation on (e.g., 'cpu', 'cuda').
-        top_k (int): Number of top predictions to consider for recall calculation.
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The trained model to be evaluated.
+    data_loader : DataLoader
+        DataLoader containing the evaluation dataset.
+    device : str
+        Device to run the evaluation on (e.g., 'cpu', 'cuda').
+    top_k : int, optional
+        Number of top predictions to consider for recall calculation, by default 10.
 
-    Returns:
-        float: recall@k score.
+    Returns
+    -------
+    float
+        recall@k score.
     """
     model.eval()
-    targets = torch.tensor([]).to(device, dtype=torch.long)
-    predicts = torch.tensor([]).to(device)
+    targets = torch.tensor([]).to(device=device, dtype=torch.long)
+    predicts = torch.tensor([]).to(device=device)
 
     with torch.no_grad():
         for input_data, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
@@ -37,11 +75,29 @@ def test_model(model, data_loader: DataLoader, device, top_k: int = 10) -> float
             predicts = torch.cat((predicts, predict))
 
     recall_at_k = retrieval_recall(predicts, targets, top_k=top_k)
-
     return recall_at_k.item()
 
 
-def calculate_embeddings(model, user_label_pdf, store_label_pdf):
+def calculate_embeddings(
+    model: torch.nn.Module, user_label_pdf: pd.DataFrame, store_label_pdf: pd.DataFrame
+) -> Tuple[dict, dict]:
+    """
+    Calculate embeddings for users and stores.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Trained embedding model.
+    user_label_pdf : pd.DataFrame
+        DataFrame containing user labels.
+    store_label_pdf : pd.DataFrame
+        DataFrame containing store labels.
+
+    Returns
+    -------
+    Tuple[dict, dict]
+        Tuple containing user and store embeddings.
+    """
     user_embeddings = {}
     for _, row in user_label_pdf.iterrows():
         user_embeddings[row[0]] = torch.sum(
@@ -57,14 +113,51 @@ def calculate_embeddings(model, user_label_pdf, store_label_pdf):
     return user_embeddings, store_embeddings
 
 
-def create_faiss_index(store_embeddings):
+def create_faiss_index(store_embeddings: dict) -> faiss.IndexFlatL2:
+    """
+    Create a FAISS index for store embeddings.
+
+    Parameters
+    ----------
+    store_embeddings : dict
+        Dictionary containing store embeddings.
+
+    Returns
+    -------
+    faiss.IndexFlatL2
+        FAISS index for store embeddings.
+    """
     store_embeddings_np = np.array(list(store_embeddings.values()), dtype=np.float32)
     index = faiss.IndexFlatL2(16)
     index.add(store_embeddings_np)
     return index
 
 
-def estimate_gmv_per_user(user_embeddings, store_embeddings, index, top_k=5):
+def estimate_gmv_per_user(
+    user_embeddings: dict,
+    store_embeddings: dict,
+    index: faiss.IndexFlatL2,
+    top_k: int = 5,
+) -> dict:
+    """
+    Estimate Gross Merchandise Volume (GMV) per user.
+
+    Parameters
+    ----------
+    user_embeddings : dict
+        Dictionary containing user embeddings.
+    store_embeddings : dict
+        Dictionary containing store embeddings.
+    index : faiss.IndexFlatL2
+        FAISS index for store embeddings.
+    top_k : int, optional
+        Number of top stores to consider, by default 5.
+
+    Returns
+    -------
+    dict
+        Dictionary containing estimated GMV per user.
+    """
     top_stores_with_scores = defaultdict(list)
 
     def rescale_scores(scores, new_min, new_max):
@@ -92,7 +185,24 @@ def estimate_gmv_per_user(user_embeddings, store_embeddings, index, top_k=5):
     return top_stores_with_scores
 
 
-def calculate_estimated_gmv(top_stores_with_scores, avg_store_amount):
+def calculate_estimated_gmv(
+    top_stores_with_scores: dict, avg_store_amount: dict
+) -> dict:
+    """
+    Calculate estimated Gross Merchandise Volume (GMV) per user.
+
+    Parameters
+    ----------
+    top_stores_with_scores : dict
+        Dictionary containing top stores with scores for each user.
+    avg_store_amount : dict
+        Dictionary containing average store amounts.
+
+    Returns
+    -------
+    dict
+        Dictionary containing estimated GMV per user.
+    """
     estimated_gmv_per_user = defaultdict(float)
 
     for user_id, store_id_info in top_stores_with_scores.items():
@@ -105,8 +215,30 @@ def calculate_estimated_gmv(top_stores_with_scores, avg_store_amount):
 
 
 def get_context_features(
-    users_csv_path, transactions_csv_path, stores_csv_path, predicted_date
-):
+    users_csv_path: str,
+    transactions_csv_path: str,
+    stores_csv_path: str,
+    predicted_date: str,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Get context features from CSV files.
+
+    Parameters
+    ----------
+    users_csv_path : str
+        Path to the users CSV file.
+    transactions_csv_path : str
+        Path to the transactions CSV file.
+    stores_csv_path : str
+        Path to the stores CSV file.
+    predicted_date : str
+        Predicted date in 'YYYYMMDD' format.
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        Tuple containing DataFrames for user and store context features.
+    """
     processor = DataPreprocessor(
         users_csv_path,
         transactions_csv_path,
@@ -142,8 +274,30 @@ def get_context_features(
 
 
 def preprocess_inference_data(
-    users_csv_path, transactions_csv_path, stores_csv_path, predicted_date
-):
+    users_csv_path: str,
+    transactions_csv_path: str,
+    stores_csv_path: str,
+    predicted_date: str,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Preprocess data for inference.
+
+    Parameters
+    ----------
+    users_csv_path : str
+        Path to the users CSV file.
+    transactions_csv_path : str
+        Path to the transactions CSV file.
+    stores_csv_path : str
+        Path to the stores CSV file.
+    predicted_date : str
+        Predicted date in 'YYYYMMDD' format.
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        Tuple containing preprocessed DataFrames for users and stores.
+    """
     field_dims, feature_pdf = calculate_field_dims(
         users_csv_path, transactions_csv_path, stores_csv_path
     )
@@ -184,6 +338,19 @@ def preprocess_inference_data(
 
 
 def get_temporal_labels(predicted_date: str) -> dict:
+    """
+    Get temporal labels based on the predicted date.
+
+    Parameters
+    ----------
+    predicted_date : str
+        Predicted date in 'YYYYMMDD' format.
+
+    Returns
+    -------
+    dict
+        Dictionary containing temporal labels.
+    """
     # Convert predicted date string to datetime object
     predicted_date = pd.to_datetime(predicted_date, format="%Y%m%d")
 
@@ -200,8 +367,3 @@ def get_temporal_labels(predicted_date: str) -> dict:
         "month": month,
     }
     return labels
-
-
-# a, b = preprocess_inference_data(users_csv_path, transactions_csv_path, stores_csv_path, predicted_date)
-# user_context_pdf, store_context_pdf = get_context_features(users_csv_path, transactions_csv_path, stores_csv_path,
-#                                                            predicted_date)

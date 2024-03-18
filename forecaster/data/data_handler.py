@@ -7,8 +7,8 @@ class DataHandler:
     --------
     >>> from forecaster.data.data_handler import DataHandler
     >>> DataHandler.fetch_user_data("data/users.csv").head(1)
-        user_id	gender	age
-    0	3cf2d95c-851a-3e66-bd62-36050c1aa8dd	M	30.0
+                                   user_id gender   age
+    0  3cf2d95c-851a-3e66-bd62-36050c1aa8dd      M  30.0
     """
 
     @staticmethod
@@ -34,12 +34,12 @@ class DataHandler:
 
         assert any(
             transaction_pdf.columns == default_columns
-        ), f"Check the input columns of transaction, got {transaction_pdf.columns}"
+        ), f"Check the input columns of transactions, got {transaction_pdf.columns}"
         return transaction_pdf
 
     @staticmethod
     def fetch_store_data(data_path: str) -> pd.DataFrame:
-        """Return: 'user_id', 'gender', 'age'"""
+        """Return: 'id', 'nam', 'laa', 'category', 'lat', 'lon'"""
         default_columns = ["id", "nam", "laa", "category", "lat", "lon"]
         store_pdf = pd.read_csv(data_path)
 

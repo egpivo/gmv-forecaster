@@ -9,13 +9,16 @@ class EarlyStopper:
     Utility class for early stopping during model training.
     """
 
-    def __init__(self, num_trials: int, save_path: str):
+    def __init__(self, num_trials: int, save_path: str) -> None:
         """
         Initialize EarlyStopper object.
 
-        Args:
-            num_trials (int): Maximum number of trials to continue training without improvement.
-            save_path (str): File path to save the best model.
+        Parameters
+        ----------
+        num_trials : int
+            Maximum number of trials to continue training without improvement.
+        save_path : str
+            File path to save the best model.
         """
         self.num_trials = num_trials
         self.trial_counter = 0
@@ -28,14 +31,23 @@ class EarlyStopper:
         """
         Decide whether to continue training based on the current metric.
 
-        Args:
-            model: Model being trained.
-            metric (float or torch.Tensor): Current metric of the model.
+        Parameters
+        ----------
+        model : torch.nn.Module
+            Model being trained.
+        metric : Union[float, torch.Tensor]
+            Current metric of the model.
 
-        Returns:
-            bool: True if training should continue, False otherwise.
+        Returns
+        -------
+        bool
+            True if training should continue, False otherwise.
         """
-        metric_value = metric.item() if isinstance(metric, torch.Tensor) else metric
+        try:
+            metric_value = metric.item() if isinstance(metric, torch.Tensor) else metric
+        except AttributeError:
+            raise TypeError("Metric must be either a float or a torch.Tensor")
+
         if metric_value > self.best_metric:
             self.best_metric = metric_value
             self.trial_counter = 0

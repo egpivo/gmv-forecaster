@@ -29,7 +29,45 @@ class RollingWindowTrainer:
         model_name: str,
         device: torch.device,
         logger: Optional[logging.Logger] = None,
-    ):
+    ) -> None:
+        """
+        Initialize the RollingWindowTrainer.
+
+        Parameters
+        ----------
+        start_month : str
+            Start month for training.
+        end_month : str
+            End month for training.
+        user_data_path : str
+            Path to user data.
+        transaction_data_path : str
+            Path to transaction data.
+        store_data_path : str
+            Path to store data.
+        embed_dim : int
+            Embedding dimension.
+        learning_rate : float
+            Learning rate.
+        batch_size : int
+            Batch size.
+        weight_decay : float
+            Weight decay.
+        save_dir : str
+            Directory to save model.
+        epoch : int
+            Number of epochs.
+        dropout : float
+            Dropout rate.
+        num_workers : int
+            Number of workers.
+        model_name : str
+            Name of the model.
+        device : torch.device
+            Device for training.
+        logger : Optional[logging.Logger], optional
+            Logger object, by default None
+        """
         self.start_month = start_month
         self.end_month = end_month
         self.user_data_path = user_data_path
@@ -45,9 +83,12 @@ class RollingWindowTrainer:
         self.num_workers = num_workers
         self.model_name = model_name
         self.device = device
-        self.logger = logger
+        self.logger = logger or logging.getLogger(__name__)
 
-    def train(self):
+    def train(self) -> None:
+        """
+        Train the model over the specified rolling window.
+        """
         field_dims, _ = calculate_field_dims(
             self.user_data_path, self.transaction_data_path, self.store_data_path
         )

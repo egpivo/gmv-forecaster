@@ -1,17 +1,23 @@
+from typing import Tuple
+
 import pandas as pd
 import torch
 from torch.nn import Module
-from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchmetrics.functional.classification import binary_auroc
 from tqdm import tqdm
 
-from forecaster.data.data_proprocessor import DataPreprocessor
+from forecaster.data.data_proprocessor import (
+    CONTEXT_FIELDS,
+    STORE_FIELDS,
+    USER_FIELDS,
+    DataPreprocessor,
+)
 
 
 def train_model(
     model: Module,
-    optimizer: Optimizer,
+    optimizer: torch.optim.Optimizer,
     data_loader: DataLoader,
     criterion,
     device: torch.device,
@@ -20,20 +26,28 @@ def train_model(
     """
     Train the model using the provided data loader.
 
-    Args:
-        model (Module): The model to be trained.
-        optimizer (Optimizer): Optimizer for updating model parameters.
-        data_loader (DataLoader): DataLoader containing the training dataset.
-        criterion: Loss function used for training.
-        device (torch.device): Device to run the training on (e.g., 'cpu', 'cuda').
-        log_interval (int): Interval for logging training loss.
+    Parameters
+    ----------
+    model : Module
+        The model to be trained.
+    optimizer : torch.optim.Optimizer
+        Optimizer for updating model parameters.
+    data_loader : DataLoader
+        DataLoader containing the training dataset.
+    criterion : callable
+        Loss function used for training.
+    device : torch.device
+        Device to run the training on (e.g., 'cpu', 'cuda').
+    log_interval : int, optional
+        Interval for logging training loss, by default 100.
 
-    Returns:
-        None
+    Returns
+    -------
+    None
     """
     model.train()
     total_loss = 0
-    progressor = tqdm(data_loader, smoothing=0, mininterval=1.0)
+    progressor = tqdm(data_loader, desc="Training", smoothing=0, mininterval=1.0)
     for i, (input_data, target) in enumerate(progressor):
         input_data, target = input_data.to(device), target.to(device)
         optimizer.zero_grad()
@@ -53,19 +67,26 @@ def validate_model(
     """
     Evaluate the model using the provided data loader and return AUROC score.
 
-    Args:
-        model (Module): The trained model to be evaluated.
-        data_loader (DataLoader): DataLoader containing the evaluation dataset.
-        device (torch.device): Device to run the evaluation on (e.g., 'cpu', 'cuda').
+    Parameters
+    ----------
+    model : Module
+        The trained model to be evaluated.
+    data_loader : DataLoader
+        DataLoader containing the evaluation dataset.
+    device : torch.device
+        Device to run the evaluation on (e.g., 'cpu', 'cuda').
 
-    Returns:
-        AUROC score (float)
+    Returns
+    -------
+    float
+        AUROC score.
     """
     model.eval()
     all_targets = torch.tensor([]).to(device, dtype=torch.long)
     all_predictions = torch.tensor([]).to(device)
     with torch.no_grad():
-        for input_data, target in tqdm(data_loader, smoothing=0, mininterval=1.0):
+        progressor = tqdm(data_loader, desc="Validation", smoothing=0, mininterval=1.0)
+        for input_data, target in progressor:
             input_data, target = input_data.to(device), target.to(device)
             output = model(input_data)
             all_targets = torch.cat((all_targets, target))
@@ -78,15 +99,29 @@ def calculate_field_dims(
     user_data_path: str,
     transaction_data_path: str,
     store_data_path: str,
-) -> pd.Series:
-    processor = DataPreprocessor(
+) -> Tuple[pd.Series, pd.DataFrame]:
+    """
+    Calculate the field dimensions based on the provided data paths.
+
+    Parameters
+    ----------
+    user_data_path : str
+        Path to the user data file.
+    transaction_data_path : str
+        Path to the transaction data file.
+    store_data_path : str
+        Path to the store data file.
+
+    Returns
+    -------
+    Tuple[pd.Series, pd.DataFrame]
+        Series containing the field dimensions and DataFrame with processed data.
+    """
+    full_pdf = DataPreprocessor(
         user_data_path,
         transaction_data_path,
         store_data_path,
         is_negative_sampling=False,
-    )
-    feature_pdf = processor.process()[
-        [*processor._user_fields, *processor._store_fields, *processor._context_fields]
-    ]
-
+    ).process()
+    feature_pdf = full_pdf[[*USER_FIELDS, *STORE_FIELDS, *CONTEXT_FIELDS]]
     return feature_pdf.apply(max) + 2, feature_pdf
