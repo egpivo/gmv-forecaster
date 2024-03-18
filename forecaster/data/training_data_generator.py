@@ -101,9 +101,9 @@ class TrainingDataGenerator:
         self.dataset = ModelDataset(self.full_data_pdf, self.train_indices)
 
     def _split_indices(self) -> tuple[torch.tensor, torch.tensor, torch.tensor]:
-        test_threshold = self.test_month
-        test_upper_bound = self.test_month + pd.DateOffset(months=1)
-        validation_threshold = test_threshold - pd.DateOffset(months=1)
+        test_upper_bound = self.test_month
+        test_lower_bound = test_upper_bound - pd.DateOffset(months=1)
+        validation_threshold = test_lower_bound - pd.DateOffset(months=1)
         train_lower_bound = validation_threshold - pd.DateOffset(years=1)
 
         # Split indices based on time
@@ -117,13 +117,13 @@ class TrainingDataGenerator:
         valid_indices = torch.tensor(
             self.full_data_pdf[
                 (self.full_data_pdf["event_occurrence"] >= validation_threshold)
-                & (self.full_data_pdf["event_occurrence"] < test_threshold)
+                & (self.full_data_pdf["event_occurrence"] < test_lower_bound)
             ].index,
             dtype=torch.int64,
         )
         test_indices = torch.tensor(
             self.full_data_pdf[
-                (self.full_data_pdf["event_occurrence"] >= test_threshold)
+                (self.full_data_pdf["event_occurrence"] >= test_lower_bound)
                 & (self.full_data_pdf["event_occurrence"] < test_upper_bound)
             ].index,
             dtype=torch.int64,

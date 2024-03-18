@@ -83,7 +83,8 @@ class RollingWindowTrainer:
             trainer.train()
 
             # Evaluate the model
-            test_recall_at_k = test_model(
-                trainer.model, trainer.test_loader, self.device
-            )
-            self.logger.info(f"Test Recall for month {month}: {test_recall_at_k}")
+            if len(trainer.test_loader) > 0:
+                test_recall_at_k = test_model(
+                    trainer.model, trainer.test_loader, self.device
+                )
+                self.logger.info(f"Test Recall for month {month}: {test_recall_at_k}")

@@ -14,12 +14,12 @@ class UserGmvForecaster:
     """
     Forecast GMV for each user based on their top-5 stores and average store GMV.
 
-    Parameters:
-        - model_path (str): Path to the trained model checkpoint.
-        - user_csv_path (str): Path to the user data CSV file.
-        - transactions_csv_path (str): Path to the transactions data CSV file.
-        - stores_csv_path (str): Path to the stores data CSV file.
-        - scale (int): Scale factor for estimation (e.g., number of days).
+    Args:
+        model_path (str): Path to the trained XDFM model.
+        users_csv_path (str): Path to the CSV file containing user data.
+        transactions_csv_path (str): Path to the CSV file containing transaction data.
+        stores_csv_path (str): Path to the CSV file containing store data.
+        top_k (int, optional): Number of top stores to consider for each user. Defaults to 5.
 
     Returns:
         dict: Estimated GMV for each user.
@@ -33,38 +33,47 @@ class UserGmvForecaster:
 
     def __init__(
         self,
-        model_path,
-        user_csv_path,
-        transactions_csv_path,
-        stores_csv_path,
-        scale=30,
+        model_path: str,
+        users_csv_path: str,
+        transactions_csv_path: str,
+        stores_csv_path: str,
+        top_k: int = 5,
     ):
-        self.model = torch.load(model_path)
-        self.model.eval()
         self.processor = DataPreprocessor(
-            user_csv_path, transactions_csv_path, stores_csv_path
+            users_csv_path, transactions_csv_path, stores_csv_path
         )
-        self.full_pdf = self.processor.process()
-        self.user_label_pdf, self.store_label_pdf = preprocess_inference_data(
-            user_csv_path, transactions_csv_path, stores_csv_path
-        )
-        self.scale = scale
+        self.model = torch.load(model_path)
 
-    def forecast(self):
+        self.users_csv_path = users_csv_path
+        self.transactions_csv_path = transactions_csv_path
+        self.stores_csv_path = stores_csv_path
+
+        self.model.eval()
+        self.top_k = top_k
+        self.avg_store_amount = self._calculate_avg_store_amount()
+
+    def forecast(self, predicted_date: str) -> dict:
+        user_label_pdf, store_label_pdf = preprocess_inference_data(
+            self.users_csv_path,
+            self.transactions_csv_path,
+            self.stores_csv_path,
+            predicted_date,
+        )
         user_embeddings, store_embeddings = calculate_embeddings(
-            self.model, self.user_label_pdf, self.store_label_pdf
+            self.model, user_label_pdf, store_label_pdf
         )
         index = create_faiss_index(store_embeddings)
         top_stores_with_scores = estimate_gmv_per_user(
-            user_embeddings, store_embeddings, index
-        )
-        avg_store_amount = (
-            self.full_pdf.groupby("store_id_label")["amount"].mean().to_dict()
+            user_embeddings, store_embeddings, index, self.top_k
         )
         estimated_gmv_per_user = calculate_estimated_gmv(
-            top_stores_with_scores, avg_store_amount, self.scale
+            top_stores_with_scores, self.avg_store_amount
         )
         return estimated_gmv_per_user
+
+    def _calculate_avg_store_amount(self) -> dict:
+        full_pdf = self.processor.process()
+        return full_pdf.groupby("store_id_label")["amount"].mean().to_dict()
 
 
 if __name__ == "__main__":

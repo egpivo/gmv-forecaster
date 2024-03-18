@@ -86,9 +86,12 @@ class Trainer:
 
         for epoch_i in range(self.epoch):
             train_model(self.model, optimizer, self.train_loader, loss, self.device)
-            auroc = validate_model(self.model, self.valid_loader, self.device)
-            self.logger.info(f"Epoch: {epoch_i}, Validation AUC: {auroc}")
+            if len(self.valid_loader) > 0:
+                auroc = validate_model(self.model, self.valid_loader, self.device)
+                self.logger.info(f"Epoch: {epoch_i}, Validation AUC: {auroc}")
 
-            if not early_stopper.dose_continue_training(self.model, auroc):
-                self.logger.info(f"Validation: Best AUC: {early_stopper.best_metric}")
-                break
+                if not early_stopper.dose_continue_training(self.model, auroc):
+                    self.logger.info(
+                        f"Validation: Best AUC: {early_stopper.best_metric}"
+                    )
+                    break

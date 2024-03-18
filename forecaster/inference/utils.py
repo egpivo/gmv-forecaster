@@ -2,11 +2,13 @@ from collections import defaultdict
 
 import faiss
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from torchmetrics.functional.retrieval import retrieval_recall
 from tqdm import tqdm
 
+from forecaster.data.data_proprocessor import DataPreprocessor
 from forecaster.training.utils import calculate_field_dims
 
 
@@ -90,35 +92,116 @@ def estimate_gmv_per_user(user_embeddings, store_embeddings, index, top_k=5):
     return top_stores_with_scores
 
 
-def calculate_estimated_gmv(top_stores_with_scores, avg_store_amount, scale):
+def calculate_estimated_gmv(top_stores_with_scores, avg_store_amount):
     estimated_gmv_per_user = defaultdict(float)
 
     for user_id, store_id_info in top_stores_with_scores.items():
         for store_id_label, store_prob in store_id_info:
             if store_id_label in avg_store_amount:
                 avg_amount = avg_store_amount[store_id_label]
-                estimated_gmv_per_user[user_id] += scale * store_prob * avg_amount
+                estimated_gmv_per_user[user_id] += store_prob * avg_amount
 
     return estimated_gmv_per_user
 
 
-def preprocess_inference_data(user_csv_path, transactions_csv_path, stores_csv_path):
-    field_dims, feature_pdf = calculate_field_dims(
-        user_csv_path, transactions_csv_path, stores_csv_path
+def get_context_features(
+    users_csv_path, transactions_csv_path, stores_csv_path, predicted_date
+):
+    processor = DataPreprocessor(
+        users_csv_path,
+        transactions_csv_path,
+        stores_csv_path,
+        is_negative_sampling=False,
     )
+    full_data_pdf = processor.process()
+    full_data_pdf["event_occurrence"] = pd.to_datetime(
+        full_data_pdf["event_occurrence"]
+    )
+    upper_date = pd.to_datetime(predicted_date, format="%Y%m%d")
+    lower_date = upper_date - pd.DateOffset(years=1)
+    condition = (full_data_pdf["event_occurrence"] >= lower_date) & (
+        full_data_pdf["event_occurrence"] < upper_date
+    )
+    context_features_pdf = full_data_pdf[condition][
+        ["user_id_label", "store_id_label", *processor._context_fields[5:]]
+    ]
+    user_features = [
+        column for column in context_features_pdf.columns if "user" in column
+    ]
+    store_features = [
+        column for column in context_features_pdf.columns if "store" in column
+    ]
+
+    user_context_pdf = context_features_pdf[
+        ["transaction_age", *user_features]
+    ].drop_duplicates(subset=["user_id_label"])
+    store_context_pdf = context_features_pdf[store_features].drop_duplicates(
+        subset=["store_id_label"]
+    )
+    return user_context_pdf, store_context_pdf
+
+
+def preprocess_inference_data(
+    users_csv_path, transactions_csv_path, stores_csv_path, predicted_date
+):
+    field_dims, feature_pdf = calculate_field_dims(
+        users_csv_path, transactions_csv_path, stores_csv_path
+    )
+    feature_list = list(feature_pdf.columns)
     cumulative_field_dims = np.cumsum(field_dims)
 
-    user_label_pdf = feature_pdf[["user_id_label", "gender_label", "age_label"]]
-    user_label_pdf.loc[:, "gender_label"] += cumulative_field_dims[0]
-    user_label_pdf.loc[:, "age_label"] += cumulative_field_dims[1]
+    for index, column in enumerate(feature_list[1:]):
+        feature_pdf[column] += cumulative_field_dims.iloc[index]
+
+    # Calculate temporal features based on the predicted date
+    temporal_labels = get_temporal_labels(predicted_date)
+    user_context_pdf, store_context_pdf = get_context_features(
+        users_csv_path, transactions_csv_path, stores_csv_path, predicted_date
+    )
+
+    user_label_pdf = feature_pdf[
+        ["user_id_label", "gender_label", "age_label"]
+    ].drop_duplicates(subset=["user_id_label"])
+
+    # the label = 0 means nan
+    merged_user_df = user_label_pdf.merge(
+        user_context_pdf, on="user_id_label", how="left"
+    ).fillna(0)
+
+    # Add the calculated temporal labels to the user_label_pdf
+    for key, label in temporal_labels.items():
+        merged_user_df[key] = cumulative_field_dims[feature_list.index(key) - 1] + label
 
     store_label_pdf = feature_pdf[
         ["store_id_label", "nam_label", "laa_label", "category_label", "spatial_label"]
-    ]
-    store_label_pdf.loc[:, "store_id_label"] += cumulative_field_dims[2]
-    store_label_pdf.loc[:, "nam_label"] += cumulative_field_dims[3]
-    store_label_pdf.loc[:, "laa_label"] += cumulative_field_dims[4]
-    store_label_pdf.loc[:, "category_label"] += cumulative_field_dims[5]
-    store_label_pdf.loc[:, "spatial_label"] += cumulative_field_dims[6]
+    ].drop_duplicates(subset=["store_id_label"])
 
-    return user_label_pdf, store_label_pdf
+    # the label = 0 means nan
+    merged_store_df = store_label_pdf.merge(
+        store_context_pdf, on="store_id_label", how="left"
+    ).fillna(0)
+    return merged_user_df, merged_store_df
+
+
+def get_temporal_labels(predicted_date: str) -> dict:
+    # Convert predicted date string to datetime object
+    predicted_date = pd.to_datetime(predicted_date, format="%Y%m%d")
+
+    weekday = predicted_date.weekday()
+    is_weekend = int(predicted_date.weekday() >= 5)
+    season = (predicted_date.month % 12 + 3) // 3
+    month = predicted_date.month
+
+    # Return the calculated labels as a dictionary
+    labels = {
+        "weekday": weekday,
+        "is_weekend": is_weekend,
+        "season": season,
+        "month": month,
+    }
+    return labels
+
+
+# a, b = preprocess_inference_data(users_csv_path, transactions_csv_path, stores_csv_path, predicted_date)
+# user_context_pdf, store_context_pdf = get_context_features(users_csv_path, transactions_csv_path, stores_csv_path,
+#                                                            predicted_date)

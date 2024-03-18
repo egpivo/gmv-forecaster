@@ -105,6 +105,7 @@ class DataPreprocessor:
         num_negative_samples: int = 5,
         start_month: pd.Timestamp = None,
         end_month: pd.Timestamp = None,
+        is_negative_sampling: bool = True,
     ) -> None:
         self.user_pdf = UserDataPreprocessor(user_data_path).process()
         self.transaction_pdf = TransactionDataPreprocessor(
@@ -112,6 +113,7 @@ class DataPreprocessor:
         ).process()
         self.store_pdf = StoreDataPreprocessor(store_data_path).process()
         self.num_negative_samples = num_negative_samples
+        self.is_negative_sampling = is_negative_sampling
 
     def add_context_features(self, df: pd.DataFrame) -> pd.DataFrame:
         # Return transaction age label
@@ -126,9 +128,14 @@ class DataPreprocessor:
         return df
 
     def process(self) -> pd.DataFrame:
-        label_data_pdf = generate_negative_samples(
-            self.transaction_pdf, num_negative_samples=self.num_negative_samples
-        )
+        if self.is_negative_sampling:
+            label_data_pdf = generate_negative_samples(
+                self.transaction_pdf, num_negative_samples=self.num_negative_samples
+            )
+        else:
+            label_data_pdf = self.transaction_pdf
+            label_data_pdf["label"] = 1
+
         added_temporal_features = transform_temporal_features(label_data_pdf)
         merged_data_pdf = pd.merge(
             pd.merge(

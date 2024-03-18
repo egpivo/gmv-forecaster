@@ -79,7 +79,12 @@ def calculate_field_dims(
     transaction_data_path: str,
     store_data_path: str,
 ) -> pd.Series:
-    processor = DataPreprocessor(user_data_path, transaction_data_path, store_data_path)
+    processor = DataPreprocessor(
+        user_data_path,
+        transaction_data_path,
+        store_data_path,
+        is_negative_sampling=False,
+    )
     feature_pdf = processor.process()[
         [*processor._user_fields, *processor._store_fields, *processor._context_fields]
     ]
