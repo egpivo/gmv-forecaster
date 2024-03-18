@@ -11,7 +11,7 @@ train: install
 	python forecaster/run_training.py \
 		--user_data_path "data/sources/users.csv" \
 		--transaction_data_path "data/sources/transactions.csv" \
-		--store_data_path "data/stores.csv"
+		--store_data_path "data/sources/stores.csv"
 
 forecast: install
 	@eval "$$(conda shell.bash hook)" && \

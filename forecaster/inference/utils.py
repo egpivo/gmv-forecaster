@@ -45,6 +45,10 @@ def calculate_embeddings(
     return user_embeddings, store_embeddings
 
 
+import faiss
+import numpy as np
+
+
 def create_faiss_index(store_embeddings: dict) -> faiss.IndexFlatL2:
     """
     Create a FAISS index for store embeddings.
@@ -59,8 +63,14 @@ def create_faiss_index(store_embeddings: dict) -> faiss.IndexFlatL2:
     faiss.IndexFlatL2
         FAISS index for store embeddings.
     """
+    # Convert store embeddings to numpy array
     store_embeddings_np = np.array(list(store_embeddings.values()), dtype=np.float32)
-    index = faiss.IndexFlatL2(store_embeddings_np.shape[0])
+
+    # Get the embedding dimension
+    embed_dim = store_embeddings_np.shape[1]
+
+    # Create FAISS index
+    index = faiss.IndexFlatL2(embed_dim)
     index.add(store_embeddings_np)
     return index
 
