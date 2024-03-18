@@ -29,22 +29,22 @@ class CompressedInteractionNetwork(torch.nn.Module):
         self.num_layers = len(cross_layer_sizes)
         self.split_half = split_half
         self.conv_layers = torch.nn.ModuleList()
-        prev_dim, fc_input_dim = input_dim, 0
-        for i, cross_layer_size in enumerate(cross_layer_sizes):
+        prev_input_dim, fc_input_dim = input_dim, 0
+        for i, layer_size in enumerate(cross_layer_sizes):
             self.conv_layers.append(
                 torch.nn.Conv1d(
-                    input_dim * prev_dim,
-                    cross_layer_size,
-                    1,
+                    input_dim * prev_input_dim,
+                    layer_size,
+                    kernel_size=1,
                     stride=1,
                     dilation=1,
                     bias=True,
                 )
             )
             if self.split_half and i != self.num_layers - 1:
-                cross_layer_size //= 2
-            prev_dim = cross_layer_size
-            fc_input_dim += prev_dim
+                layer_size //= 2
+            prev_input_dim = layer_size
+            fc_input_dim += prev_input_dim
         self.fc = torch.nn.Linear(fc_input_dim, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -59,19 +59,24 @@ class CompressedInteractionNetwork(torch.nn.Module):
         --------
         - torch.Tensor: Output tensor after passing through the CIN layer.
         """
-        xs = []
-        x0, h = x.unsqueeze(2), x
+        interactions = []
+        x0 = x.unsqueeze(2)
         for i in range(self.num_layers):
-            x = x0 * h.unsqueeze(1)
-            batch_size, f0_dim, fin_dim, embed_dim = x.shape
-            x = x.view(batch_size, f0_dim * fin_dim, embed_dim)
-            x = F.relu(self.conv_layers[i](x))
+            x_interaction = x0 * x.unsqueeze(1)
+            batch_size, field_dim_0, field_dim_n, embed_dim = x_interaction.shape
+            x_interaction = x_interaction.view(
+                batch_size, field_dim_0 * field_dim_n, embed_dim
+            )
+            x_interaction = F.relu(self.conv_layers[i](x_interaction))
             if self.split_half and i != self.num_layers - 1:
-                x, h = torch.split(x, x.shape[1] // 2, dim=1)
+                x_interaction, x = torch.split(
+                    x_interaction, x_interaction.shape[1] // 2, dim=1
+                )
             else:
-                h = x
-            xs.append(x)
-        return self.fc(torch.sum(torch.cat(xs, dim=1), 2))
+                x = x_interaction
+            interactions.append(x_interaction)
+        interaction_output = torch.sum(torch.cat(interactions, dim=1), 2)
+        return self.fc(interaction_output)
 
 
 class FeaturesEmbedding(torch.nn.Module):

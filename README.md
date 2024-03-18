@@ -21,7 +21,7 @@
 4. [Engineering](#engineering)
    - [High-Level Flow](#high-level-flow)
    - [Result Reproducible](#result-reproducible)
-   -
+
 ## Exploratory Data Analysis
 ### Findings:
 
@@ -99,7 +99,7 @@ During a typical training month, the AUC score averages around 0.84. There is ro
 ## Forecast Results
 - The forecasted GMV results are accessible as follows:
     - User GMV: Available in the file `results/user_gmv_20220101_20220131.csv`.
-    - Daily GMV: Located in `results/daily_gmv_20220101_20220131.csv`.
+    - Daily GMV (YayYay): Located in `results/daily_gmv_20220101_20220131.csv`.
 
 Visualizations and further analysis can be found in the (notebook)[notebooks/forecast_analysis.ipynb]. For this challenge, we might streamline the evaluation process. Nonetheless, specific evaluation functions are ready for implementation under `forecaster/evaluation/`.
 

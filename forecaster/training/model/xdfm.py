@@ -1,3 +1,5 @@
+from typing import List
+
 import torch
 
 from forecaster.training.model.layer import (
@@ -19,27 +21,27 @@ class ExtremeDeepFactorizationMachineModel(torch.nn.Module):
 
     def __init__(
         self,
-        field_dims,
-        embed_dim,
-        mlp_dims,
-        dropout,
-        cross_layer_sizes,
-        split_half=True,
+        field_dims: List[int],
+        embed_dim: int,
+        mlp_dims: List[int],
+        dropout: float,
+        cross_layer_sizes: List[int],
+        split_half: bool = True,
     ) -> None:
         """
         Initialize the Extreme Deep Factorization Machine Model.
 
         Parameters
         ----------
-        field_dims : list
+        field_dims : List[int]
             The dimensions of the input fields.
         embed_dim : int
             The dimension of the embedding.
-        mlp_dims : tuple
+        mlp_dims :  List[int]
             The dimensions of the multi-layer perceptron.
         dropout : float
             The dropout probability.
-        cross_layer_sizes : tuple
+        cross_layer_sizes : List[int]
             The sizes of cross layers.
         split_half : bool, optional
             Whether to split half of the cross layers, by default True
@@ -53,7 +55,7 @@ class ExtremeDeepFactorizationMachineModel(torch.nn.Module):
         self.mlp = MultiLayerPerceptron(self.embed_output_dim, mlp_dims, dropout)
         self.linear = FeaturesLinear(field_dims)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the model.
 

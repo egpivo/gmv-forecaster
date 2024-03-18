@@ -68,10 +68,12 @@ class UserGmvForecaster:
             users_csv_path, transactions_csv_path, stores_csv_path
         )
         self.model = torch.load(model_path)
+        self.model.eval()
+
         self.users_csv_path = users_csv_path
         self.transactions_csv_path = transactions_csv_path
         self.stores_csv_path = stores_csv_path
-        self.model.eval()
+
         self.top_k = top_k
         self.avg_store_amount = self._calculate_avg_store_amount()
 
