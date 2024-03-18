@@ -89,8 +89,6 @@ You can find the visualization in the notebook located at [notebooks/forecast_an
 To reproduce the results, follow these steps:
 
 1. **Prerequisite**: Ensure [Miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/) is installed.
-
 2. **Environment Setup**: Run `make install` to set up the necessary environment.
-
 3. **Training**: Execute `make train` to train the forecasting model.
-4. **Inference**: Execute `make inference` to forecast the GMV.
+4. **Forecast**: Execute `make forecast` to forecast the GMV.

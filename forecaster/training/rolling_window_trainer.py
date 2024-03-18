@@ -7,7 +7,7 @@ import torch
 from forecaster.data.data_preprocessor import DataPreprocessor
 from forecaster.evaluation.utils import test_model
 from forecaster.training.trainer import Trainer
-from forecaster.training.utils import calculate_field_dims
+from forecaster.training.utils import calculate_field_dims, inner_months_range
 
 
 class RollingWindowTrainer:
@@ -92,8 +92,9 @@ class RollingWindowTrainer:
         field_dims, _ = calculate_field_dims(
             self.user_data_path, self.transaction_data_path, self.store_data_path
         )
-        for month in range(int(self.start_month), int(self.end_month) + 1):
-            test_month = pd.to_datetime(str(month), format="%Y%m")
+
+        for month in inner_months_range(self.start_month, self.end_month):
+            test_month = pd.to_datetime(month, format="%Y%m")
             train_lower_bound = test_month - pd.DateOffset(years=1, month=1)
 
             processor = DataPreprocessor(

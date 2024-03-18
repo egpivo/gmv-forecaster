@@ -90,3 +90,13 @@ def calculate_field_dims(
     ).process()
     feature_pdf = full_pdf[[*USER_FIELDS, *STORE_FIELDS, *CONTEXT_FIELDS]]
     return feature_pdf.apply(max) + 2, feature_pdf
+
+
+def inner_months_range(start_month: str, end_month: str) -> list[str]:
+    # Convert start and end months to datetime objects
+    start_date = pd.to_datetime(start_month, format="%Y%m")
+    end_date = pd.to_datetime(end_month, format="%Y%m")
+
+    # Generate range of dates
+    date_range = pd.date_range(start=start_date, end=end_date, freq="MS")
+    return [date.strftime("%Y%m") for date in date_range]

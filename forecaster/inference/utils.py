@@ -60,7 +60,7 @@ def create_faiss_index(store_embeddings: dict) -> faiss.IndexFlatL2:
         FAISS index for store embeddings.
     """
     store_embeddings_np = np.array(list(store_embeddings.values()), dtype=np.float32)
-    index = faiss.IndexFlatL2(16)
+    index = faiss.IndexFlatL2(store_embeddings_np.shape[0])
     index.add(store_embeddings_np)
     return index
 
