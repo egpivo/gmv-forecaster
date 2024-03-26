@@ -160,7 +160,7 @@ To replicate the forecasting results, adhere to the following procedure:
    - Custom data path and predicted date range:
        ```bash
         source activate forecaster
-        python forecaster/run_training.py \
+        python forecaster/run_forecasting.py \
           --user_data_path "{user_data_path}" \
           --transaction_data_path "{transaction_data_path}" \
           --store_data_path "{transaction_data_path}" \
