@@ -7,8 +7,8 @@ class DataHandler:
     --------
     >>> from forecaster.data.data_handler import DataHandler
     >>> DataHandler.fetch_user_data("data/sources/users.csv").head(1)
-                                   user_id gender   age
-    0  3cf2d95c-851a-3e66-bd62-36050c1aa8dd      M  30.0
+        user_id gender   age
+    0  xxxx      M  30.0
     """
 
     @staticmethod
