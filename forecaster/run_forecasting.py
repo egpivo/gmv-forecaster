@@ -78,7 +78,7 @@ def fetch_args() -> argparse.Namespace:
         type=str,
         dest="daily_result_name",
         default="daily_gmv",
-        help="PayPay daily GMV forecasting result",
+        help="Daily GMV forecasting result",
     )
     return arg_parser.parse_args()
 
